@@ -117,6 +117,9 @@ class Config:
     message_ttl_seconds: int = 3600
     poll_interval_seconds: int = 10
     imap_host: str = "imap.gmail.com"
+    #: Folder the poller reads. Gmail users who auto-archive alias mail can point
+    #: this at "[Gmail]/All Mail" so filtered messages are still picked up.
+    imap_mailbox: str = "INBOX"
     initial_lookback_days: int = 1
     max_aliases_per_user: int = 25
     generate_per_hour: int = 20
@@ -255,6 +258,7 @@ class Config:
             message_ttl_seconds=ttl or 3600,
             poll_interval_seconds=poll_interval or 10,
             imap_host=env.get("IMAP_HOST", "imap.gmail.com"),
+            imap_mailbox=env.get("IMAP_MAILBOX", "INBOX") or "INBOX",
             initial_lookback_days=lookback or 1,
             max_aliases_per_user=max_aliases or 25,
             generate_per_hour=gen_per_hour or 20,

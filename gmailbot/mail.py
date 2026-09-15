@@ -282,9 +282,11 @@ class GmailPoller:
         if self._client is None:
             self._client = self._connect()
         client = self._client
-        status, _ = client.select("INBOX", readonly=True)
+        status, _ = client.select(self.config.imap_mailbox, readonly=True)
         if status != "OK":
-            raise RuntimeError(f"IMAP SELECT failed: {status}")
+            raise RuntimeError(
+                f"IMAP SELECT {self.config.imap_mailbox!r} failed: {status}"
+            )
 
         uids = self._pending_uids(client)
         if not uids:

@@ -66,6 +66,20 @@ def test_poll_stores_mail_and_advances_cursor(config, db):
     assert client.stored_flags == []
 
 
+def test_configured_mailbox_is_used(config, db, env, tmp_path):
+    """Auto-archiving filters keep mail out of INBOX; the folder is configurable."""
+    import dataclasses
+
+    all_mail = dataclasses.replace(config, imap_mailbox="[Gmail]/All Mail")
+    db.add_alias(1, "tiger123")
+    mailbox = FakeMailbox()
+    mailbox.add(1, make_raw_email(to=ALIAS_ADDRESS, message_id="<a@x>"))
+    client = FakeImap(mailbox)
+    poller = GmailPoller(all_mail, db, client_factory=lambda host: client, sleep=lambda s: None)
+    poller.run_once()
+    assert client.selected == [("[Gmail]/All Mail", True)]
+
+
 def test_unmatched_mail_is_not_refetched_forever(config, db):
     """The original re-fetched every unmatched UNSEEN message every 5 seconds."""
     db.add_alias(1, "tiger123")

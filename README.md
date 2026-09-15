@@ -75,9 +75,17 @@ You need:
    this account gets `/ban`, `/unban`, `/broadcast`, `/stats`.
 3. **A feedback channel id** where `/feedback` is delivered, with the bot added
    as an admin or a member that may post.
-4. **Gmail IMAP + an App Password**: enable 2-step verification, then create an
-   App Password (16 characters — a normal account password will not work), and
-   enable IMAP in Gmail settings.
+4. **Gmail IMAP + an App Password** — a normal account password will **not**
+   work. Step-by-step with screenshots-by-numbers, the exact Google URLs, and a
+   troubleshooting table: **[docs/GMAIL_SETUP.md](docs/GMAIL_SETUP.md)**. Short
+   version: turn on **2-Step Verification** (App Passwords do not exist without
+   it) → create an App Password at <https://myaccount.google.com/apppasswords> →
+   put the 16 characters in `GMAIL_APP_PASSWORD` → enable **IMAP** in Gmail
+   settings. Then verify it before deploying:
+
+   ```bash
+   python tools/check_gmail.py
+   ```
 
 Missing or malformed configuration fails at startup with a list of exactly what
 to fix; the process never starts with placeholder secrets.
