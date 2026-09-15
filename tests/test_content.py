@@ -178,6 +178,41 @@ def test_clamp_never_cuts_inside_a_tag():
     assert not clamped.endswith("<")
 
 
+def test_finalize_appends_the_credit_footer_once(config):
+    once = fmt.finalize("Hello", config)
+    assert once.endswith(config.credit_line)
+    twice = fmt.finalize(once, config)
+    assert twice == once
+    assert twice.count(config.credit_line) == 1
+
+
+def test_finalize_budgets_the_footer_inside_the_limit(config):
+    huge = fmt.finalize("<b>" + "𝒙" * 4000, config)
+    assert fmt.utf16_len(huge) <= fmt.TELEGRAM_TEXT_LIMIT
+    assert config.credit_line in huge, "branding must survive clamping"
+
+
+def test_clamp_counts_utf16_units_not_code_points(config):
+    """Every styled-font character is two UTF-16 units; len() would under-count."""
+    text = "𝒙" * 3000  # 3000 code points, 6000 UTF-16 units
+    assert len(text) < fmt.TELEGRAM_TEXT_LIMIT < fmt.utf16_len(text)
+    clamped = fmt.clamp(text)
+    assert fmt.utf16_len(clamped) <= fmt.TELEGRAM_TEXT_LIMIT
+    assert len(clamped) > 1900, "must not over-trim astral text by half"
+
+
+def test_clamp_for_caption_never_truncates_a_code(config):
+    short, overflow = fmt.clamp_for_caption("Your code is 483920", config)
+    assert overflow is None and "483920" in short
+
+    long_body = "padding " * 200 + "code 483920"
+    caption, overflow = fmt.clamp_for_caption(long_body, config)
+    assert overflow is not None
+    assert "483920" in overflow
+    assert fmt.utf16_len(caption) <= fmt.CAPTION_LIMIT
+    assert config.credit_line in caption
+
+
 def test_duration_wording():
     assert fmt.duration(3600) == "1 hour"
     assert fmt.duration(7200) == "2 hours"

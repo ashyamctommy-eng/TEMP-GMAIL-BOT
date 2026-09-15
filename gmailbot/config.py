@@ -19,6 +19,14 @@ from typing import Mapping
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+#: Brand strings. These are Unicode "styled" fonts (Mathematical Alphanumeric
+#: Symbols): they are ordinary characters, so any client *font* can fail to
+#: render them (they show as boxes on some Android keyboards/fonts). They are
+#: config, not code, so they can be swapped for plain text in one place.
+BRAND_NAME_DEFAULT = "𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕"
+BRAND_CREDIT_DEFAULT = "𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚"
+BRAND_PHOTO_DEFAULT = PROJECT_ROOT / "gmailbot" / "assets" / "tempgmail.jpg"
+
 #: A Telegram bot token looks like ``123456789:AA...``
 _TOKEN_RE = re.compile(r"^\d{6,}:[A-Za-z0-9_-]{30,}$")
 
@@ -115,6 +123,10 @@ class Config:
     openrouter_api_key: str | None = None
     use_ai_otp_fallback: bool = False
     log_level: str = "INFO"
+    brand_name: str = BRAND_NAME_DEFAULT
+    brand_credit: str = BRAND_CREDIT_DEFAULT
+    brand_photo: Path | None = BRAND_PHOTO_DEFAULT
+    send_brand_photo: bool = True
 
     # ---------------------------------------------------------------- helpers
     @property
@@ -124,6 +136,11 @@ class Config:
 
     def full_alias(self, alias: str) -> str:
         return f"{self.alias_root}+{alias}@{self.alias_domain}"
+
+    @property
+    def credit_line(self) -> str:
+        """Appended to every user-facing message."""
+        return f"Bot by: {self.brand_credit}"
 
     @classmethod
     def from_env(
@@ -216,6 +233,10 @@ class Config:
         if alias_root and not re.fullmatch(r"[A-Za-z0-9._-]+", alias_root):
             problems.append(f"ALIAS_ROOT has unsupported characters: {alias_root!r}")
 
+        # Computed before the check below, otherwise a typo in BOT_PHOTO_PATH
+        # collects a "problem" that nobody ever reads.
+        brand_photo = _brand_photo(env, problems, root)
+
         if problems:
             raise ConfigError(problems)
 
@@ -244,7 +265,40 @@ class Config:
                 env.get("USE_AI_OTP_FALLBACK", "false")
             ).lower() in {"1", "true", "yes", "on"},
             log_level=str(env.get("LOG_LEVEL", "INFO")).upper(),
+            brand_name=_get(
+                env, "BOT_BRAND_NAME", problems, required=False,
+                default=BRAND_NAME_DEFAULT,
+            ) or BRAND_NAME_DEFAULT,
+            brand_credit=_get(
+                env, "BOT_CREDIT", problems, required=False,
+                default=BRAND_CREDIT_DEFAULT,
+            ) or BRAND_CREDIT_DEFAULT,
+            brand_photo=brand_photo,
+            send_brand_photo=str(
+                env.get("SEND_BRAND_PHOTO", "true")
+            ).lower() in {"1", "true", "yes", "on"},
         )
+
+
+def _brand_photo(env: Mapping[str, str], problems: list[str], root: Path) -> Path | None:
+    """Asset used as the photo on /start and OTP alerts.
+
+    Missing asset is a soft failure (the bot sends text instead), a *broken*
+    setting is not: pointing BOT_PHOTO_PATH at something unreadable is a typo
+    worth surfacing at boot.
+    """
+    raw = _get(env, "BOT_PHOTO_PATH", problems, required=False, default=None)
+    if raw and raw.lower() in {"none", "off", "false"}:
+        return None
+    if not raw:
+        return BRAND_PHOTO_DEFAULT if BRAND_PHOTO_DEFAULT.is_file() else None
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute():
+        candidate = (root / candidate).resolve()
+    if not candidate.is_file():
+        problems.append(f"BOT_PHOTO_PATH does not exist: {candidate}")
+        return None
+    return candidate
 
 
 def setup_logging(config: Config) -> None:

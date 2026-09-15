@@ -11,8 +11,10 @@ preview shows the same markup the client would receive -- including the escaping
 
 from __future__ import annotations
 
+import base64
 import html
 import json
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,6 +69,7 @@ header.page code { background: var(--code-bg); padding: 1px 5px; border-radius: 
   word-wrap: break-word; overflow-wrap: anywhere; font-size: 12.5px; }
 .msg.in .bubble { background: var(--bubble-in); border-bottom-left-radius: 4px; }
 .msg.out .bubble { background: var(--bubble-out); border-bottom-right-radius: 4px; }
+.bubble img.photo { display: block; width: 100%; border-radius: 9px; margin-bottom: 6px; }
 .bubble code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
   color: #cfe3f5; }
@@ -108,16 +111,30 @@ def frames(events: list[dict]) -> list[tuple[str, list[dict]]]:
     return grouped
 
 
+@lru_cache(maxsize=8)
+def _data_uri(path: str) -> str:
+    """Inline the asset so the preview is a single self-contained file."""
+    try:
+        raw = Path(path).read_bytes()
+    except OSError:
+        return ""
+    return f"data:image/{'png' if path.endswith('.png') else 'jpeg'};base64," + base64.b64encode(raw).decode()
+
+
 def render_message(event: dict) -> str:
-    chat = event["chat"]
     if event["role"] == "note":
         return f'<div class="note">{html.escape(event["text"])}</div>'
 
     side = "out" if event["role"] in ("in", "channel") else "in"
     if event["role"] == "channel":
         side = "in"
-    body = event["text"]  # already Telegram-HTML; same tag names as HTML
-    out = [f'<div class="msg {side}">', f'<div class="bubble">{body}</div>']
+    body = event["text"]  # already Telegram-HTML; the same tag names as HTML
+    image = ""
+    if event.get("photo"):
+        uri = _data_uri(event["photo"])
+        if uri:
+            image = f'<img class="photo" src="{uri}" alt="brand photo">'
+    out = [f'<div class="msg {side}">', f'<div class="bubble">{image}{body}</div>']
     buttons = event.get("buttons")
     if buttons:
         rows = "".join(
@@ -134,7 +151,6 @@ def render_message(event: dict) -> str:
 
 
 def render_phone(chat: str, events: list[dict], labels: dict[str, str], index: int) -> str:
-    sub = {"user": "end user", "channel": "bot → channel", "admin": "owner"}.get(chat, chat)
     items = "".join(render_message(event) for event in events)
     return (
         f'<div class="phone"><div class="phone-head">'
@@ -158,7 +174,7 @@ def main() -> int:
 <title>TempGail — bot preview</title><style>{CSS}</style></head>
 <body>
 <header class="page">
-  <h1>TempGail <span>· preview of a real session</span></h1>
+  <h1>{html.escape(data.get("brand", "TempGail"))} <span>· preview of a real session</span></h1>
   <p>Every bubble below was produced by the bot's own handlers and renderer —
      captured by driving <code>BotHandlers</code> + <code>GmailPoller</code> through
      fake Telegram/IMAP transports. Nothing here is hand-written copy.</p>
@@ -172,7 +188,8 @@ def main() -> int:
   Buttons are real Telegram inline keyboards (labels are the bot's own button text).
   Nothing is sent with <code>parse_mode=Markdown</code>: every screen is HTML-escaped
   once, which is why a subject full of markup renders literally instead of breaking the send.
-  The mailbox is opened read-only, so the bot never alters Gmail state.
+  The mailbox is opened read-only, so the bot never alters Gmail state ·
+  {html.escape(data.get("credit", ""))}
 </footer>
 </body></html>
 """

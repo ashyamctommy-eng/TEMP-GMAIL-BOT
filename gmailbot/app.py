@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from telegram import BotCommand
+from telegram import BotCommand, BotCommandScopeChat
 from telegram.ext import Application
 
 from .ai import make_openrouter_lookup
@@ -19,14 +19,28 @@ from .otp import OtpExtractor
 
 logger = logging.getLogger(__name__)
 
+#: Pushed to Telegram on every start, so users get the command menu with no
+#: manual BotFather setup. Telegram shows these in the "/" menu and the blue
+#: Menu button automatically.
 COMMANDS = [
+    BotCommand("start", "Show the menu"),
     BotCommand("generate", "Create a new alias"),
     BotCommand("otp", "Recent codes & verification links"),
     BotCommand("history", "Your aliases"),
     BotCommand("view", "Messages for one alias"),
     BotCommand("delete", "Deactivate an alias"),
     BotCommand("feedback", "Message the admin"),
+    BotCommand("cancel", "Leave feedback mode"),
     BotCommand("help", "How this bot works"),
+]
+
+#: Admin commands are registered for the owner only, so they do not clutter (or
+#: advertise themselves in) everybody else's menu.
+ADMIN_COMMANDS = COMMANDS + [
+    BotCommand("stats", "Usage statistics"),
+    BotCommand("ban", "Ban a user"),
+    BotCommand("unban", "Unban a user"),
+    BotCommand("broadcast", "Message every user"),
 ]
 
 
@@ -65,10 +79,31 @@ def build_application(config: Config) -> Application:
     )
 
     async def post_init(application: Application) -> None:
+        # Everything a user sees before typing anything is registered here, so a
+        # fresh deployment needs no manual configuration in @BotFather.
         try:
             await application.bot.set_my_commands(COMMANDS)
         except Exception as exc:  # noqa: BLE001 - cosmetic, never fatal
             logger.warning("could not set command menu: %s", exc)
+        try:
+            await application.bot.set_my_commands(
+                ADMIN_COMMANDS, scope=BotCommandScopeChat(chat_id=config.admin_user_id)
+            )
+        except Exception as exc:  # noqa: BLE001
+            # Expected until the owner has pressed /start at least once.
+            logger.info("could not set the admin command menu: %s", exc)
+        try:
+            await application.bot.set_my_short_description(
+                f"{config.brand_name} — Gmail aliases with instant OTP codes."
+            )
+            await application.bot.set_my_description(
+                f"{config.brand_name}\n\n"
+                "Get a fresh Gmail alias for any signup and receive the mail, OTP "
+                "codes and verification links right here in Telegram.\n\n"
+                f"{config.credit_line}"
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("could not set bot description: %s", exc)
         notifier.bind(asyncio.get_running_loop(), application)
         notifier.start()
         poller.start()

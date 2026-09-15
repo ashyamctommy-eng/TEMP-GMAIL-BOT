@@ -13,7 +13,6 @@ from __future__ import annotations
 import collections
 import importlib.util
 import os
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -189,8 +188,6 @@ def main() -> int:
     if not ORIGINAL.is_file():
         print(f"missing {ORIGINAL}")
         return 1
-    import sqlite3 as _sqlite3  # noqa: F401  (kept for parity with the report)
-
     os.chdir(tempfile.mkdtemp())  # the original writes bot.log to cwd
     orig = load_original()
     tmp = Path(tempfile.mkdtemp())

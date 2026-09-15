@@ -19,6 +19,7 @@ class Sent:
     text: str
     markup: Any = None
     parse_mode: str | None = None
+    photo: str | None = None
 
 
 class FakeMessage:
@@ -30,6 +31,10 @@ class FakeMessage:
 
     async def reply_text(self, text, reply_markup=None, parse_mode=None, **kwargs):
         self.sent.append(Sent(text, reply_markup, parse_mode))
+        return self
+
+    async def reply_photo(self, photo=None, caption=None, reply_markup=None, parse_mode=None, **kwargs):
+        self.sent.append(Sent(caption or "", reply_markup, parse_mode, photo=photo))
         return self
 
     async def edit_text(self, text, reply_markup=None, parse_mode=None, **kwargs):
@@ -84,6 +89,7 @@ class FakeBot:
         self.member = member or FakeChatMember()
         self.messages: list[tuple[int, str, Any]] = []
         self.photos: list[tuple[int, str, str]] = []
+        self.photo_calls: list[dict] = []
         self.deleted: list[int] = []
         self.commands: list[Any] = []
         self.fail_for: set[int] = set()
@@ -98,13 +104,22 @@ class FakeBot:
         self.messages.append((chat_id, text, parse_mode))
         return FakeMessage(text=text)
 
-    async def send_photo(self, chat_id, photo, caption=None, parse_mode=None, **kwargs):
+    async def send_photo(self, chat_id, photo, caption=None, parse_mode=None, reply_markup=None, **kwargs):
+        self.photo_calls.append(
+            {"chat_id": chat_id, "photo": photo, "caption": caption, "markup": reply_markup}
+        )
         if chat_id in self.fail_for:
             from telegram.error import TelegramError
 
             raise TelegramError("injected failure")
         self.photos.append((chat_id, photo, caption or ""))
         return FakeMessage(text=caption or "")
+
+    async def set_my_description(self, description=None, **kwargs):
+        self.description = description
+
+    async def set_my_short_description(self, short_description=None, **kwargs):
+        self.short_description = short_description
 
     async def delete_message(self, chat_id, message_id):
         self.deleted.append(message_id)
@@ -113,7 +128,7 @@ class FakeBot:
         self.get_chat_member_calls += 1
         return self.member
 
-    async def set_my_commands(self, commands):
+    async def set_my_commands(self, commands, **kwargs):
         self.commands = list(commands)
 
 

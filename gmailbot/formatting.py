@@ -26,6 +26,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from . import callbacks as cb
 from .models import Alias, Message
 TELEGRAM_TEXT_LIMIT = 4096
+#: Telegram caps photo captions at 1024 characters (UTF-16 units, like text).
+CAPTION_LIMIT = 1024
 BODY_PREVIEW_CHARS = 220
 SUBJECT_PREVIEW_CHARS = 90
 MESSAGES_PER_PAGE = 5
@@ -33,6 +35,37 @@ OTP_ENTRIES_PER_PAGE = 5
 
 _ALLOWED_TAGS = {"b", "i", "u", "s", "code", "pre", "a", "blockquote", "span"}
 _TAG_RE = re.compile(r"<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s[^>]*)?)>")
+
+
+def utf16_len(value: str) -> int:
+    """Length as Telegram counts it.
+
+    Telegram measures in UTF-16 code units, not code points: every character
+    outside the BMP (which includes the styled brand font and most emoji) costs
+    two. Counting ``len()`` would let a branded message look 19 characters
+    shorter than it is and silently exceed the limit.
+    """
+    return len(value.encode("utf-16-le")) // 2
+
+
+def _fit(text: str, budget: int) -> str:
+    """Longest prefix of ``text`` that fits ``budget`` UTF-16 units.
+
+    Binary search, not a linear estimate: with the styled brand font and emoji
+    every character can cost two units, so "remove N characters" over-trims by
+    up to half. Slicing never splits a surrogate pair because Python strings are
+    sequences of code points.
+    """
+    if utf16_len(text) <= budget:
+        return text
+    low, high = 0, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if utf16_len(text[:middle]) <= budget:
+            low = middle
+        else:
+            high = middle - 1
+    return text[:low]
 
 
 def esc(value: object) -> str:
@@ -74,21 +107,60 @@ def clamp(text: str, limit: int = TELEGRAM_TEXT_LIMIT) -> str:
     The closing tags are part of the budget, otherwise a heavily tagged message
     ends up over the limit again and Telegram rejects it outright.
     """
-    if len(text) <= limit:
+    if utf16_len(text) <= limit:
         return text
     budget = limit
     balanced = text
     for _ in range(6):
-        cut = balanced[: budget - 1] if len(balanced) >= budget else balanced
+        cut = _fit(balanced, max(budget - 1, 1))
         # Never cut inside a tag.
         if cut.rfind("<") > cut.rfind(">"):
             cut = cut[: cut.rfind("<")]
         body = cut.rstrip() + "…"
         balanced = balance_html(body)
-        if len(balanced) <= limit:
+        if utf16_len(balanced) <= limit:
             return balanced
-        budget = limit - (len(balanced) - len(body))
-    return balanced[:limit]  # pragma: no cover - only for pathological input
+        budget = limit - (utf16_len(balanced) - utf16_len(body))
+    return _fit(balanced, limit)  # pragma: no cover - pathological input
+
+
+def credit_line(config) -> str:
+    return config.credit_line
+
+
+def brand_caption(config) -> str:
+    """Short caption used when the full message will not fit in a caption."""
+    return (
+        f"<b>{esc(config.brand_name)}</b>\n\n"
+        f"<i>New message below ↓</i>\n\n{esc(config.credit_line)}"
+    )
+
+
+def finalize(text: str, config, *, limit: int = TELEGRAM_TEXT_LIMIT) -> str:
+    """Every user-facing message leaves through here: brand footer + clamp.
+
+    The footer is budgeted *before* clamping, so branding can never push a
+    message over Telegram's limit, and it is never appended twice.
+    """
+    body = (text or "").rstrip()
+    mark = config.credit_line
+    if mark and mark in body:
+        return clamp(body, limit=limit)
+    foot = f"\n\n{mark}" if mark else ""
+    room = max(limit - utf16_len(foot), 1)
+    return clamp(body, limit=room) + foot
+
+
+def clamp_for_caption(text: str, config) -> tuple[str, str | None]:
+    """Return ``(caption, overflow_message)`` for a photo send.
+
+    Never truncates: if the branded text does not fit a caption it becomes a
+    second message, because cutting an OTP alert in half could lose the code.
+    """
+    full = finalize(text, config)
+    if utf16_len(full) <= CAPTION_LIMIT:
+        return full, None
+    return finalize(brand_caption(config), config), full
 
 
 def clip(value: str, limit: int) -> str:
@@ -144,7 +216,7 @@ def pager_row(prefix_alias: str, page: int, has_more: bool) -> list[InlineKeyboa
 # ---------------------------------------------------------------------- screens
 def welcome(config, *, max_aliases: int) -> str:
     return (
-        "🤖 <b>TempGail</b>\n\n"
+        f"🤖 <b>{esc(config.brand_name)}</b>\n\n"
         f"Generate unlimited Gmail aliases on <code>{esc(config.alias_address)}</code> "
         "and receive the mail (and OTP codes) right here.\n\n"
         "<b>Commands</b>\n"

@@ -69,12 +69,95 @@ def make_callback_update(data: str, *, user_id: int = 7, bot: FakeBot | None = N
 
 
 # ------------------------------------------------------------------- basics
-def test_start_shows_welcome_and_menu(handlers, bot):
+def test_start_shows_welcome_and_menu(handlers, bot, config):
     update, context = make_command_update("start", bot=bot)
     run(handlers.start(update, context))
-    assert "TempGail" in update.effective_message.last.text
-    assert update.effective_message.last.parse_mode == "HTML"
-    assert update.effective_message.last.markup is not None
+    last = update.effective_message.last
+    assert config.brand_name in last.text
+    assert last.parse_mode == "HTML"
+    assert last.markup is not None
+    assert config.credit_line in last.text
+
+
+def test_start_attaches_the_brand_photo(handlers, bot, config):
+    update, context = make_command_update("start", bot=bot)
+    run(handlers.start(update, context))
+    last = update.effective_message.last
+    assert last.photo and last.photo.endswith("tempgmail.jpg")
+    # The caption carries the whole message: nothing is dropped for the image.
+    assert config.brand_name in last.text and config.credit_line in last.text
+
+
+def test_otp_command_attaches_the_brand_photo(handlers, bot, db, config):
+    db.add_alias(7, "tiger123")
+    db.add_message("tiger123", "Your code", "Your code is 483920", otp="483920")
+    update, context = make_command_update("otp", bot=bot)
+    run(handlers.otp(update, context))
+    assert update.effective_message.last.photo
+    assert "<code>483920</code>" in update.effective_message.last.text
+
+
+def test_callback_edits_do_not_try_to_attach_a_photo(handlers, bot, db):
+    """Telegram cannot turn a text message into a photo by editing it."""
+    db.add_alias(7, "tiger123")
+    db.add_message("tiger123", "Your code", "code 483920", otp="483920")
+    update, context, query = make_callback_update("a:otp:0", bot=bot)
+    run(handlers.on_callback(update, context))
+    assert query.edits and all(edit.photo is None for edit in query.edits)
+
+
+def test_photo_can_be_switched_off(config, db, bot):
+    off = make_handlers(config, db, send_brand_photo=False)
+    update, context = make_command_update("start", bot=bot)
+    run(off.start(update, context))
+    assert update.effective_message.last.photo is None
+    assert "TempGail" or config.brand_name in update.effective_message.last.text
+
+
+def test_every_user_facing_message_carries_the_credit_footer(handlers, bot, db, config):
+    db.add_alias(7, "tiger123")
+    db.add_message("tiger123", "Subject", "Body with 483920 code", otp="483920", links=["https://a.test/v?token=1"])
+    steps = [
+        ("start", [], None),
+        ("generate", [], None),
+        ("history", [], None),
+        ("otp", [], None),
+        ("view", ["tiger123"], None),
+        ("delete", ["tiger123"], None),
+        ("feedback", [], None),
+        ("on_text", [], "hello there"),
+    ]
+    checked = 0
+    for name, args, typed in steps:
+        update, context = make_command_update(name, args, bot=bot) if typed is None else make_text_update(typed, bot=bot)
+        run(getattr(handlers, name)(update, context))
+        for sent in update.effective_message.sent:
+            assert config.credit_line in sent.text, f"{name} reply is missing the footer"
+            assert sent.text.count(config.credit_line) == 1, f"{name} footer duplicated"
+            checked += 1
+    assert checked >= len(steps)
+
+
+def test_long_otp_message_becomes_caption_plus_full_message(handlers, bot, db, config):
+    """A caption is capped at 1024 units, so the code must ride in the text part."""
+    db.add_alias(7, "tiger123")
+    for index in range(5):
+        db.add_message(
+            "tiger123",
+            f"Verification message {index} " + "x" * 80,
+            "padding " * 40 + f"code {700000 + index}",
+            otp=str(700000 + index),
+        )
+    update, context = make_command_update("otp", bot=bot)
+    run(handlers.otp(update, context))
+
+    photo_sends = [s for s in update.effective_message.sent if s.photo]
+    text_sends = [s for s in update.effective_message.sent if not s.photo]
+    assert photo_sends, "expected the photo"
+    assert text_sends, "expected the full message after the photo"
+    # The overflow message still contains the codes and the footer.
+    assert any("<code>700004</code>" in sent.text for sent in text_sends)
+    assert all(config.credit_line in sent.text for sent in text_sends)
 
 
 def test_every_reply_uses_html_parse_mode(handlers, bot, db):

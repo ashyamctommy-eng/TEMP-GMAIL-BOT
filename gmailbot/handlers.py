@@ -27,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from pathlib import Path
 from typing import Callable
 
 from telegram import (
@@ -173,6 +174,16 @@ class BotHandlers:
         await self._db(self.db.ensure_user, user.id)
         return False
 
+    def _brand_photo(self) -> str | None:
+        """Path to the brand image, or None when it is switched off/missing."""
+        if not self.config.send_brand_photo or self.config.brand_photo is None:
+            return None
+        path = Path(self.config.brand_photo)
+        if not path.is_file():
+            logger.warning("brand photo missing at %s; sending text only", path)
+            return None
+        return str(path)
+
     async def _reply(
         self,
         update: Update,
@@ -180,13 +191,20 @@ class BotHandlers:
         markup: InlineKeyboardMarkup | None = None,
         *,
         edit: bool = False,
+        photo: bool = False,
     ) -> TgMessage | None:
-        """Single send path. Always HTML; ``BadRequest`` is logged, not retried blind."""
+        """Single send path: brand footer, HTML only, optional photo.
+
+        ``BadRequest`` is logged rather than retried blind -- but a rejected
+        photo degrades to plain text instead of losing the message.
+        """
         query = update.callback_query
+        # The credit footer is applied here, once, for every user-facing message.
+        full = fmt.finalize(text, self.config)
         try:
             if edit and query is not None:
                 return await query.edit_message_text(
-                    text, reply_markup=markup, parse_mode=ParseMode.HTML
+                    full, reply_markup=markup, parse_mode=ParseMode.HTML
                 )
             target = update.effective_message
             if target is None and query is not None:
@@ -195,8 +213,26 @@ class BotHandlers:
                 target = query.message
             if target is None:  # pragma: no cover - defensive
                 return None
+            asset = self._brand_photo() if photo else None
+            if asset:
+                caption, overflow = fmt.clamp_for_caption(text, self.config)
+                try:
+                    sent = await target.reply_photo(
+                        photo=asset,
+                        caption=caption,
+                        reply_markup=None if overflow else markup,
+                        parse_mode=ParseMode.HTML,
+                    )
+                except TelegramError as exc:
+                    logger.warning("brand photo rejected (%s); sending text", exc)
+                else:
+                    if overflow is not None:
+                        await target.reply_text(
+                            overflow, reply_markup=markup, parse_mode=ParseMode.HTML
+                        )
+                    return sent
             return await target.reply_text(
-                text, reply_markup=markup, parse_mode=ParseMode.HTML
+                full, reply_markup=markup, parse_mode=ParseMode.HTML
             )
         except BadRequest as exc:
             logger.error("telegram rejected a message: %s | text=%r", exc, text[:200])
@@ -223,6 +259,7 @@ class BotHandlers:
             update,
             fmt.welcome(self.config, max_aliases=self.config.max_aliases_per_user),
             fmt.menu_keyboard(),
+            photo=True,
         )
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -383,15 +420,17 @@ class BotHandlers:
     async def otp(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if await self._reject_if_banned(update):
             return
-        await self._show_otps(update, page=0)
+        await self._show_otps(update, page=0, photo=True)
 
-    async def _show_otps(self, update: Update, *, page: int = 0, edit: bool = False) -> None:
+    async def _show_otps(
+        self, update: Update, *, page: int = 0, edit: bool = False, photo: bool = False
+    ) -> None:
         user = update.effective_user
         assert user is not None
         recent = await self._db(self.db.recent_messages, user.id, limit=60)
         with_secrets = [message for message in recent if message.has_secret]
         text, markup = fmt.otp_digest(with_secrets, page=page, total=len(with_secrets))
-        await self._reply(update, text, markup, edit=edit)
+        await self._reply(update, text, markup, edit=edit, photo=photo and not edit)
 
     # -------------------------------------------------------------- feedback
     async def feedback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -760,6 +799,22 @@ def build_notification(config: Config) -> Callable[[StoredMessage], Notification
         else:
             text, markup = fmt.mail_notification(config, message)
             kind = "message"
-        return Notification(user_id=stored.user_id, text=text, markup=markup, kind=kind)
+        # Push alerts do not pass through BotHandlers._reply, so the credit
+        # footer is applied here too: every message the user receives is branded,
+        # whether it answers a command or arrives on its own.
+        text = fmt.finalize(text, config)
+        asset = None
+        if config.send_brand_photo and config.brand_photo and Path(config.brand_photo).is_file():
+            asset = str(config.brand_photo)
+        return Notification(
+            user_id=stored.user_id,
+            text=text,
+            markup=markup,
+            kind=kind,
+            # Photo on the alerts that matter (codes); plain mail stays text-only
+            # so the chat does not turn into an image feed.
+            photo=asset if kind == "otp" else None,
+            caption_fallback=fmt.brand_caption(config),
+        )
 
     return render

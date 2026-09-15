@@ -57,12 +57,21 @@ CHAT_LABELS = {
 }
 
 
-def record(chat: str, role: str, text: str, buttons=None, note: str | None = None) -> None:
+def record(
+    chat: str,
+    role: str,
+    text: str,
+    buttons=None,
+    note: str | None = None,
+    photo: str | None = None,
+) -> None:
     entry: dict = {"chat": chat, "role": role, "text": text}
     if buttons:
         entry["buttons"] = buttons
     if note:
         entry["note"] = note
+    if photo:
+        entry["photo"] = photo  # the actual attached asset, rendered in the preview
     events.append(entry)
 
 
@@ -85,7 +94,7 @@ def drain_channel(bot: FakeBot, *, label: str = CHANNEL_LABEL) -> None:
 def drain(message: FakeMessage, chat: str = "user") -> None:
     while message.sent:
         sent = message.sent.pop(0)
-        record(chat, "out", sent.text, button_rows(sent.markup))
+        record(chat, "out", sent.text, button_rows(sent.markup), photo=sent.photo)
 
 
 def drain_query(query: FakeQuery) -> None:
@@ -229,7 +238,9 @@ def main() -> int:
             "out",
             notification.text,
             button_rows(notification.markup),
-            note="push alert (mail poller)",
+            note="push alert (mail poller)"
+            + (" + brand photo" if notification.photo else ""),
+            photo=notification.photo,
         )
 
     poller = GmailPoller(
@@ -271,6 +282,9 @@ def main() -> int:
     run_command(handlers, bot, "stats", user_id=ADMIN_ID)
     run_command(handlers, bot, "broadcast", ["Heads up: codes now auto-detect from HTML-only mail too."], user_id=ADMIN_ID)
 
+    CHAT_LABELS["user"] = f"{config.brand_name} · @theta_test"
+    CHAT_LABELS["admin"] = f"{config.brand_name} · @owner (admin)"
+
     out = ROOT / "preview" / "session.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
@@ -279,7 +293,9 @@ def main() -> int:
                 "generated_by": "evidence/preview_session.py",
                 "alias": alias.name,
                 "address": address,
-                "chat_labels": CHAT_LABELS,
+                "brand": config.brand_name,
+            "credit": config.credit_line,
+            "chat_labels": CHAT_LABELS,
                 "stats": db.stats(),
                 "events": events,
             },

@@ -53,14 +53,19 @@ def test_mail_to_notification_pipeline(config, db):
         await notifier.stop()
         return bot.messages
 
-    messages = asyncio.run(scenario())
-    assert len(messages) == 1
-    chat_id, text, parse_mode = messages[0]
-    assert chat_id == 1
-    assert parse_mode == "HTML"
-    assert "<code>483920</code>" in text
-    assert "https://acme.test/verify?token=zz" in text
-    assert "New code" in text
+    asyncio.run(scenario())
+    # OTP alerts go out as a photo with the whole alert as the caption, so the
+    # code and links must survive that switch.
+    assert len(bot.photo_calls) == 1
+    call = bot.photo_calls[0]
+    assert call["chat_id"] == 1
+    assert call["photo"].endswith("tempgmail.jpg")
+    caption = call["caption"]
+    assert "<code>483920</code>" in caption
+    assert "https://acme.test/verify?token=zz" in caption
+    assert "New code" in caption
+    assert config.credit_line in caption, "alerts are branded too"
+    assert bot.messages == [], "caption fitted, so no second message is needed"
 
 
 def test_plain_mail_produces_a_quiet_notification(config, db):
@@ -90,7 +95,10 @@ def test_plain_mail_produces_a_quiet_notification(config, db):
     asyncio.run(scenario())
     assert len(bot.messages) == 1
     assert "New email" in bot.messages[0][1]
+    assert config.credit_line in bot.messages[0][1]
     assert "483920" not in bot.messages[0][1]
+    # Plain mail stays text-only; only code alerts get the image.
+    assert bot.photo_calls == []
 
 
 def test_notifier_drops_blocked_users_without_retrying_forever(config):
@@ -101,6 +109,10 @@ def test_notifier_drops_blocked_users_without_retrying_forever(config):
 
     class BlockedBot(FakeBot):
         async def send_message(self, chat_id, text, **kwargs):
+            attempts["count"] += 1
+            raise Forbidden("user blocked the bot")
+
+        async def send_photo(self, chat_id, photo, caption=None, **kwargs):
             attempts["count"] += 1
             raise Forbidden("user blocked the bot")
 
@@ -124,7 +136,7 @@ def test_notifier_drops_blocked_users_without_retrying_forever(config):
         await notifier.stop()
 
     asyncio.run(scenario())
-    assert attempts["count"] == 1
+    assert attempts["count"] == 1, "Forbidden must not be retried"
 
 
 def test_notifier_buffers_until_ready(config):

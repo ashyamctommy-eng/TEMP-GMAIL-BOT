@@ -25,6 +25,7 @@ from typing import Callable
 from telegram import InlineKeyboardMarkup
 from telegram.error import BadRequest, Forbidden, RetryAfter, TelegramError
 
+from .formatting import CAPTION_LIMIT, utf16_len
 from .models import StoredMessage
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,10 @@ class Notification:
     markup: InlineKeyboardMarkup | None = None
     kind: str = "message"
     attempts: int = field(default=0)
+    #: Local file for the attached brand image (None = text only).
+    photo: str | None = None
+    #: Short branded caption used when ``text`` exceeds Telegram's caption limit.
+    caption_fallback: str | None = None
 
 
 class Notifier:
@@ -121,6 +126,48 @@ class Notifier:
                 continue
             await self._deliver(notification)
 
+    async def _send(self, application, notification: Notification) -> None:
+        """Send the notification, preferring a photo and never losing the text.
+
+        A photo caption is capped at 1024 UTF-16 units, so a long alert goes out
+        as a short branded caption **plus** the full message -- truncating an OTP
+        alert could drop the code itself.
+        """
+        bot = application.bot
+        if notification.photo:
+            caption = (
+                notification.text
+                if utf16_len(notification.text) <= CAPTION_LIMIT
+                else (notification.caption_fallback or notification.text[:200])
+            )
+            overflow = notification.text if caption is not notification.text else None
+            try:
+                await bot.send_photo(
+                    chat_id=notification.user_id,
+                    photo=notification.photo,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=None if overflow else notification.markup,
+                )
+            except BadRequest as exc:
+                # Unreadable/oversized asset must degrade to text, not vanish.
+                logger.warning("photo rejected for %s (%s); falling back to text", notification.user_id, exc)
+            else:
+                if overflow is not None:
+                    await bot.send_message(
+                        chat_id=notification.user_id,
+                        text=overflow,
+                        reply_markup=notification.markup,
+                        parse_mode="HTML",
+                    )
+                return
+        await bot.send_message(
+            chat_id=notification.user_id,
+            text=notification.text,
+            reply_markup=notification.markup,
+            parse_mode="HTML",
+        )
+
     async def _deliver(self, notification: Notification) -> None:
         application = self._application
         if application is None:  # pragma: no cover - defensive
@@ -128,12 +175,7 @@ class Notifier:
         while notification.attempts < self._max_attempts:
             notification.attempts += 1
             try:
-                await application.bot.send_message(
-                    chat_id=notification.user_id,
-                    text=notification.text,
-                    reply_markup=notification.markup,
-                    parse_mode="HTML",
-                )
+                await self._send(application, notification)
                 return
             except RetryAfter as exc:
                 delay = float(getattr(exc, "retry_after", 1)) + 0.5

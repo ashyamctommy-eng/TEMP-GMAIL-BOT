@@ -1,8 +1,10 @@
-# TempGail — Gmail alias inbox bot
+# 𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕
 
 A Telegram bot that issues Gmail plus-aliases (`you+alias@gmail.com`), watches the
 mailbox over IMAP, and pushes each new message back to the user — with OTP codes
 and verification links already pulled out.
+
+**Bot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚** · every message the bot sends carries that credit line.
 
 This is a refactor of a single 2,194-line `GmailBot.py`. The original still runs;
 what changed and why is in **[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)**, and
@@ -86,14 +88,53 @@ Gmail IMAP ──poll every N s──▶ parse ──▶ OTP + links ──▶ m
 * **Messages expire** after `MESSAGE_TTL_SECONDS`; a write lock plus WAL means
   the poller and the handlers never corrupt or drop each other's writes.
 
+## Branding
+
+Everything cosmetic lives in config, so you never have to edit Python to change it:
+
+| Env var | Default | What it does |
+| --- | --- | --- |
+| `BOT_BRAND_NAME` | `𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕` | name shown in the welcome screen, descriptions and captions |
+| `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …`, appended to **every** message |
+| `BOT_PHOTO_PATH` | `gmailbot/assets/tempgmail.jpg` | image attached to `/start` and OTP alerts (`none` disables) |
+| `SEND_BRAND_PHOTO` | `true` | master switch for the photo |
+
+Notes worth knowing before you change them:
+
+* The defaults use Unicode *styled* fonts (Mathematical Alphanumeric Symbols).
+  They are ordinary characters, so a client whose font lacks those glyphs shows
+  boxes — swap `BOT_BRAND_NAME`/`BOT_CREDIT` for plain text if you care about
+  that (or about screen readers), no code change needed.
+* Telegram counts length in **UTF-16 units**, and every styled character costs
+  two. The clamping logic measures that way, so a branded message can never
+  exceed the 4096-character limit or the 1024-character caption limit.
+* The footer is applied once, in one place (`formatting.finalize`), for command
+  replies *and* for push alerts. A photo's caption is capped, so a long OTP alert
+  goes out as a short branded caption **plus** the full text — it is never
+  truncated, because that could drop the code itself.
+* The asset is an original illustration generated for this project, not a scraped
+  logo — Gmail's marks are Google trademarks and shipping them in your repo is a
+  liability.
+
+## Commands are pre-registered
+
+`app.post_init` pushes the command list to Telegram on every startup, so users
+see the `/` menu and the blue **Menu** button without you configuring anything in
+@BotFather. Bot descriptions (the text shown on the bot's profile before a user
+types) are set the same way. Admin commands (`/stats`, `/ban`, `/unban`,
+`/broadcast`) are published only to the owner's chat via a scoped command list,
+so they do not clutter anyone else's menu. `tests/test_app.py` asserts that every
+registered command is advertised and that the descriptions fit Telegram's limits.
+
 ## Behaviour worth knowing
 
 | Command | Notes |
 | --- | --- |
+| `/start`, `/help` | welcome + menu, sent with the brand photo |
 | `/generate [name]` | random alias, or a name you choose; rate-limited per user |
 | `/history` | your aliases, with delete/restore |
 | `/view <alias> [page]` | messages for one alias, paginated |
-| `/otp` | recent codes and links, paginated |
+| `/otp` | recent codes and links, paginated, sent with the brand photo |
 | `/delete <alias>` | deactivate (mail is dropped, alias can be restored) |
 | `/feedback` | text or screenshot to the admin channel |
 | `/ban`, `/unban`, `/broadcast`, `/stats` | admin only |
@@ -108,6 +149,18 @@ after commands (`otp`, `view`, …) are rejected as reserved.
 * All user-controlled content is HTML-escaped exactly once before it is sent.
 * Secrets are fetched from the database on demand, never cached in memory.
 * The mailbox is opened read-only; the bot never modifies Gmail state.
+
+## Credits
+
+* **Dev / maintainer:** **𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚**
+* Original single-file bot: `evidence/original_GmailBot.py` (kept byte-identical
+  so `evidence/reproduce_bug_report.py` can show the before/after)
+* Refactor, tests and documentation: built on the review in
+  [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
+* Brand illustration: generated for this project (no third-party assets)
+
+If you build on this, keep the credit line intact or overridable — it is
+configured as `BOT_CREDIT`, not hardcoded.
 
 ## Honest limitations
 
