@@ -79,8 +79,13 @@ def main() -> int:
 
     status, data = client.select(config.imap_mailbox, readonly=True)
     if status != "OK":
-        print(f"[{BAD}] cannot open mailbox {config.imap_mailbox!r}: {data}")
-        print("       Is IMAP enabled in Gmail settings? Only IMAP matters, POP does not.")
+        print(f"[{BAD}] login worked, but cannot open {config.imap_mailbox!r}: {data}")
+        print("       This is almost always IMAP being switched off in Gmail.")
+        print("       Gmail -> gear icon -> See all settings -> Forwarding and POP/IMAP")
+        print("         -> 'IMAP access' -> the Status line at the TOP of that section")
+        print("         -> select 'Enable IMAP' -> scroll down -> Save Changes")
+        print("       Direct link: https://mail.google.com/mail/u/0/#settings/fwdandpop")
+        print("       POP is unrelated; leave it disabled.")
         return 1
     total = int(data[0]) if data and data[0].isdigit() else 0
     print(f"[{OK}] mailbox opened (read-only) -- {total} message(s)")
