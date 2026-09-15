@@ -38,7 +38,7 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 #: Characters kept from a body when it is used purely for display.
 PREVIEW_CHARS = 220
@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS messages (
     recipient         TEXT,
     email_subject     TEXT,
     email_body        TEXT,
-    received_at       TEXT    NOT NULL,
+    received_at       TEXT    NOT NULL,   -- from the sender's Date header (display)
+    stored_at         TEXT    NOT NULL,   -- when we stored it (retention is measured here)
     seen              INTEGER NOT NULL DEFAULT 0,
     otp_code          TEXT,
     verification_links TEXT
@@ -160,38 +161,43 @@ class Database:
                 conn.close()
         logger.info("database ready at %s (schema v%d)", self.path, SCHEMA_VERSION)
 
+    @staticmethod
+    def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
+        return {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+
+    def _ensure_columns(
+        self, conn: sqlite3.Connection, table: str, wanted: dict[str, str]
+    ) -> None:
+        if not self._columns(conn, table):
+            return  # table does not exist in this legacy database
+        existing = self._columns(conn, table)
+        for column, ddl_type in wanted.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl_type}")
+
     def _migrate(
         self, conn: sqlite3.Connection, from_version: int, *, legacy: bool = False
     ) -> None:
-        """Additive migrations. v0 -> v1 is the shipped schema above."""
-        if from_version == 0:
-            # Legacy databases (from the single-file bot) already have users/
-            # aliases/messages/feedback; only the new columns/indexes are missing.
-            existing = {
-                row[0]
-                for row in conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'"
-                )
-            }
-            if "messages" in existing:
-                columns = {
-                    row[1] for row in conn.execute("PRAGMA table_info(messages)")
-                }
-                if "rfc_message_id" not in columns:
-                    conn.execute("ALTER TABLE messages ADD COLUMN rfc_message_id TEXT")
-                if "sender" not in columns:
-                    conn.execute("ALTER TABLE messages ADD COLUMN sender TEXT")
-                if "recipient" not in columns:
-                    conn.execute("ALTER TABLE messages ADD COLUMN recipient TEXT")
-            if "aliases" in existing:
-                columns = {
-                    row[1] for row in conn.execute("PRAGMA table_info(aliases)")
-                }
-                if "format" not in columns:
-                    conn.execute("ALTER TABLE aliases ADD COLUMN format TEXT")
+        """Additive, versioned migrations (``PRAGMA user_version`` is the cursor)."""
+        if from_version < 1:
+            # v0 = the original single-file bot's schema.
+            self._ensure_columns(
+                conn,
+                "messages",
+                {"rfc_message_id": "TEXT", "sender": "TEXT", "recipient": "TEXT"},
+            )
+            self._ensure_columns(conn, "aliases", {"format": "TEXT"})
+        if from_version < 2:
+            # Retention used to be measured from the Date header, so mail that had
+            # been waiting in the mailbox longer than the TTL was deleted in the
+            # same cycle it was stored. Track our own clock separately.
+            self._ensure_columns(conn, "messages", {"stored_at": "TEXT"})
+            conn.execute(
+                "UPDATE messages SET stored_at = received_at WHERE stored_at IS NULL"
+            )
         if legacy:
             # Fresh databases are created at the current version; only a database
-            # from the original single-file bot needs (and reports) a migration.
+            # from an earlier schema needs (and reports) a migration.
             logger.info(
                 "migrated existing database from schema v%d to v%d",
                 from_version,
@@ -335,6 +341,8 @@ class Database:
         """
         alias_name = alias_name.lower()
         payload = json.dumps(links, ensure_ascii=False) if links else None
+        now = to_iso(utcnow())
+        received = received_at or now
         with self._write_lock, self.conn as conn:
             row = conn.execute(
                 "SELECT alias_id, user_id FROM aliases "
@@ -363,14 +371,15 @@ class Database:
                         subject=subject,
                         otp=otp,
                         links=list(links or []),
+                        received_at=from_iso(received),
                         preview=_preview(body),
                         duplicate=True,
                     )
 
             cursor = conn.execute(
                 "INSERT INTO messages (alias_id, rfc_message_id, sender, recipient, "
-                "email_subject, email_body, received_at, otp_code, verification_links) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "email_subject, email_body, received_at, stored_at, otp_code, "
+                "verification_links) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     row["alias_id"],
                     rfc_message_id,
@@ -378,7 +387,8 @@ class Database:
                     recipient,
                     subject,
                     body,
-                    received_at or to_iso(utcnow()),
+                    received,
+                    now,
                     otp,
                     payload,
                 ),
@@ -399,6 +409,7 @@ class Database:
             subject=subject,
             otp=otp,
             links=list(links or []),
+            received_at=from_iso(received),
             preview=_preview(body),
         )
 
@@ -500,12 +511,19 @@ class Database:
             )
 
     def prune_messages(self, ttl_seconds: int) -> int:
-        """Delete messages older than the TTL. Returns the number removed."""
+        """Delete messages stored more than ``ttl_seconds`` ago.
+
+        Measured from ``stored_at`` (our clock), never from the sender's ``Date``
+        header: a message that waited in the mailbox longer than the TTL -- the
+        normal case after a restart, given the initial lookback window -- used to
+        be stored and deleted within the same poll cycle, so the user got a push
+        notification for a code they could never open again.
+        """
         cutoff = to_iso(utcnow())
         with self._write_lock, self.conn as conn:
             cursor = conn.execute(
                 "DELETE FROM messages "
-                "WHERE julianday(?) - julianday(received_at) > ?",
+                "WHERE julianday(?) - julianday(COALESCE(stored_at, received_at)) > ?",
                 (cutoff, ttl_seconds / 86400.0),
             )
             removed = cursor.rowcount or 0

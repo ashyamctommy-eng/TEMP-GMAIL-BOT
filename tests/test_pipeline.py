@@ -6,6 +6,7 @@ import asyncio
 
 from gmailbot.handlers import build_notification
 from gmailbot.mail import GmailPoller
+from gmailbot.models import utcnow
 from gmailbot.notify import Notifier
 from tests.fakes import FakeBot, FakeMailbox, FakeImap, make_raw_email
 
@@ -113,7 +114,10 @@ def test_notifier_drops_blocked_users_without_retrying_forever(config):
         notifier.start()
         from gmailbot.models import StoredMessage
 
-        stored = StoredMessage(user_id=5, message_id=1, alias="a", subject="s", otp="1234", links=[])
+        stored = StoredMessage(
+            user_id=5, message_id=1, alias="a", subject="s", otp="1234",
+            links=[], received_at=utcnow(),
+        )
         notifier.emit(stored)
         notifier.emit(stored)
         await asyncio.sleep(0.05)
@@ -127,6 +131,9 @@ def test_notifier_buffers_until_ready(config):
     from gmailbot.models import StoredMessage
 
     notifier = Notifier(build_notification(config))
-    stored = StoredMessage(user_id=5, message_id=1, alias="a", subject="s", otp="1234", links=[])
+    stored = StoredMessage(
+            user_id=5, message_id=1, alias="a", subject="s", otp="1234",
+            links=[], received_at=utcnow(),
+        )
     notifier.emit(stored)  # before bind(): must be buffered, not dropped
     assert len(notifier._buffered) == 1

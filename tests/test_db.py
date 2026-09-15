@@ -74,12 +74,37 @@ def test_corrupt_link_json_does_not_break_reads(db: Database):
 
 def test_prune_respects_ttl(db: Database):
     db.add_alias(1, ALIAS)
-    old = to_iso(utcnow() - timedelta(hours=3))
-    db.add_message(ALIAS, "old", "B", received_at=old)
+    db.add_message(ALIAS, "old", "B")
+    # Age the row the way the clock would, by rewriting stored_at.
+    db.conn.execute(
+        "UPDATE messages SET stored_at = ? WHERE email_subject = 'old'",
+        (to_iso(utcnow() - timedelta(hours=3)),),
+    )
+    db.conn.commit()
     db.add_message(ALIAS, "new", "B")
 
     assert db.prune_messages(3600) == 1
     assert [m.subject for m in db.recent_messages(1)] == ["new"]
+
+
+def test_old_date_header_does_not_prune_a_freshly_stored_message(db: Database):
+    """Regression: retention must use stored_at, not the sender's Date header.
+
+    Mail that waited in the mailbox longer than the TTL (the normal case after a
+    restart, because of the initial lookback window) used to be stored and
+    deleted in the same poll cycle, so the push notification pointed at a code
+    that no longer existed.
+    """
+    db.add_alias(1, ALIAS)
+    stale_date = to_iso(utcnow() - timedelta(days=1))
+    stored = db.add_message(ALIAS, "waited in the mailbox", "Body", received_at=stale_date)
+    assert stored is not None
+
+    assert db.prune_messages(3600) == 0
+    messages = db.recent_messages(1)
+    assert len(messages) == 1
+    # The sender's timestamp is still what the user sees.
+    assert messages[0].received_at.day == (utcnow() - timedelta(days=1)).day
 
 
 def test_concurrent_writers_do_not_lose_messages(tmp_path):

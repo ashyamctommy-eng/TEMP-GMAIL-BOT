@@ -272,6 +272,32 @@ and discarded:
 
 ---
 
+## Bugs my own refactor had (and how they surfaced)
+
+Listing these because a review that only reports the other person's mistakes is
+worth less. All three are fixed and pinned by tests:
+
+1. **`clamp()` could still exceed Telegram's 4096-character limit.** It truncated
+   first and closed open tags afterwards, so the closing tags were outside the
+   budget. Caught by the first test run; the fix reserves room for them.
+   → `test_content.py::test_clamp_balances_tags_and_respects_the_limit`
+2. **The schema loader split the DDL on `;`** and one inline comment contained a
+   semicolon, so `PRAGMA`/`CREATE` parsing died with
+   `sqlite3.OperationalError: incomplete input` on boot. Now `executescript()`.
+   → caught immediately by `test_db.py`.
+3. **Retention used the sender's clock, not ours.** `prune_messages()` measured
+   the TTL against `received_at`, which is parsed from the mail's `Date` header.
+   So any message that had been sitting in the mailbox longer than the TTL — the
+   *normal* case right after a restart, because the first poll looks back
+   `INITIAL_LOOKBACK_DAYS` — was stored and deleted inside the same poll cycle:
+   the user got a push notification for a code that was already gone from `/otp`.
+   Found by building the visual preview, which reported `4 notifications, 0
+   messages stored`. There are now two clocks: `received_at` (sender's, what the
+   user sees) and `stored_at` (ours, what the TTL is measured against).
+   → `test_db.py::test_old_date_header_does_not_prune_a_freshly_stored_message`
+
+---
+
 ## What I did not change, on purpose
 
 I kept the *product decisions* and only fixed the engineering, because you own
@@ -299,9 +325,18 @@ those calls:
 ```bash
 cd projects/gmailbot
 pip install -r requirements.txt
-python -m pytest -q            # 123 passed
+python -m pytest -q                        # 124 passed
 python -m pyflakes gmailbot tests run.py
-python evidence/reproduce_bug_report.py   # runs the BEFORE numbers against your original file
+python evidence/reproduce_bug_report.py    # the BEFORE numbers, from your original file
+```
+
+The visual preview is generated the same way — by running the code, not by
+drawing mockups:
+
+```bash
+python evidence/preview_session.py    # drives the real handlers/poller -> preview/session.json
+python evidence/render_preview.py     # -> preview/preview.html
+python tools/cdp_shot.py "file://$PWD/preview/preview.html" preview/preview.png --width 1460
 ```
 
 `tests/` covers config validation, the DB concurrency regression, ownership and

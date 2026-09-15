@@ -51,7 +51,7 @@ from . import formatting as fmt
 from .aliases import AliasGenerator, label_for, normalize, validation_error
 from .config import Config
 from .db import Database
-from .models import Message, StoredMessage, utcnow
+from .models import Message, StoredMessage
 from .notify import Notification, Notifier, RateLimiter
 from .otp import OtpExtractor
 
@@ -749,7 +749,7 @@ def build_notification(config: Config) -> Callable[[StoredMessage], Notification
             alias=stored.alias,
             subject=stored.subject,
             body=stored.preview,
-            received_at=utcnow(),
+            received_at=stored.received_at,
             seen=False,
             otp=stored.otp,
             links=stored.links,

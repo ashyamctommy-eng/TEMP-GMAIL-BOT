@@ -1,0 +1,286 @@
+{
+  "generated_by": "evidence/preview_session.py",
+  "alias": "safeemerald",
+  "address": "tempgail.inbox+safeemerald@gmail.com",
+  "chat_labels": {
+    "user": "@theta_test · TempGail",
+    "channel": "Feedback channel · admin only",
+    "admin": "@owner · TempGail (admin)"
+  },
+  "stats": {
+    "users": 1,
+    "banned": 0,
+    "aliases": 1,
+    "active_aliases": 1,
+    "messages": 4,
+    "feedback": 1
+  },
+  "events": [
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/start"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🤖 <b>TempGail</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>Commands</b>\n/generate – new random alias\n/generate &lt;name&gt; – pick your own\n/history – your aliases\n/view &lt;alias&gt; – messages for one alias\n/otp – recent codes and verification links\n/delete &lt;alias&gt; – stop showing an alias\n/feedback – tell the admin something\n\nMessages are kept for 1 hour and then deleted automatically. Up to 25 aliases per account.\n\nTap <b>New alias</b> to get started.",
+      "buttons": [
+        [
+          "🎲 New alias"
+        ],
+        [
+          "🔑 OTPs",
+          "📋 My aliases"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/generate"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "✅ <b>Alias ready</b>\n\n<code>tempgail.inbox+safeemerald@gmail.com</code>\n\nStyle: <b>Adjective + Noun</b>\n• Give this address to the site you're signing up for\n• Mail arrives here automatically\n• OTP codes and verification links are detected for you\n• Codes are deleted after 1 hour",
+      "buttons": [
+        [
+          "👀 Messages"
+        ],
+        [
+          "🔑 OTPs",
+          "🎲 Another"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "note",
+      "text": "✉️ 4 new emails arrive in the mailbox…"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔔 <b>New code</b>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\n⏰ Kept for 1 hour.",
+      "buttons": [
+        [
+          "🔗 Full link"
+        ],
+        [
+          "👀 View messages",
+          "🔑 All OTPs"
+        ]
+      ],
+      "note": "push alert (mail poller)"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔔 <b>New code</b>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n⏰ Kept for 1 hour.",
+      "buttons": [
+        [
+          "👀 View messages",
+          "🔑 All OTPs"
+        ]
+      ],
+      "note": "push alert (mail poller)"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "📧 <b>New email</b>\n\n👤 safeemerald\n📨 Your Northwind order 5691 has shipped\n🕒 11:00 UTC",
+      "buttons": [
+        [
+          "👀 Read it"
+        ]
+      ],
+      "note": "push alert (mail poller)"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔔 <b>New code</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n⏰ Kept for 1 hour.",
+      "buttons": [
+        [
+          "👀 View messages",
+          "🔑 All OTPs"
+        ]
+      ],
+      "note": "push alert (mail poller)"
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/otp"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n",
+      "buttons": [
+        [
+          "🔗 Full link"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/view safeemerald"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "📧 <b>safeemerald</b> — 4 message(s)\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n",
+      "buttons": [
+        [
+          "🔗 Full link"
+        ],
+        [
+          "🔄 Refresh",
+          "🔑 OTPs"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/history"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "📋 <b>Your aliases</b>\n\n✅ <code>tempgail.inbox+safeemerald@gmail.com</code>",
+      "buttons": [
+        [
+          "👀 safeemerald",
+          "🗑"
+        ],
+        [
+          "🎲 New alias",
+          "🔑 OTPs"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "‹button press› v:safeemerald:0"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "📧 <b>safeemerald</b> — 4 message(s)\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n",
+      "buttons": [
+        [
+          "🔗 Full link"
+        ],
+        [
+          "🔄 Refresh",
+          "🔑 OTPs"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "‹button press› a:otp:0"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n",
+      "buttons": [
+        [
+          "🔗 Full link"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "hi"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "ℹ️ I didn't catch a command there. Send /generate for a new alias, /otp for recent codes, or /help for the full list.",
+      "buttons": [
+        [
+          "🎲 New alias"
+        ],
+        [
+          "🔑 OTPs",
+          "📋 My aliases"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/feedback"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "💬 <b>Feedback</b>\n\nSend any message — or a photo with a caption — and the admin will see it.\n\nYour Telegram name and user id are attached so replies are possible.\nSend /cancel to leave feedback mode."
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "the webhook retry bit saved me an hour, thanks!"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "✅ Thanks — your feedback reached the admin."
+    },
+    {
+      "chat": "channel",
+      "role": "channel",
+      "text": "📬 <b>Feedback</b>\n👤 Theta Tester (@theta_test)\n🆔 <code>7</code>\n<b>Feedback ID:</b> 1\n\n<blockquote>the webhook retry bit saved me an hour, thanks!</blockquote>",
+      "note": "delivered to the feedback channel"
+    },
+    {
+      "chat": "admin",
+      "role": "note",
+      "text": "↔️ the admin's own chat with the bot"
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/stats"
+    },
+    {
+      "chat": "admin",
+      "role": "out",
+      "text": "📊 <b>Statistics</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages stored: 4\n💬 Feedback: 1"
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/broadcast Heads up: codes now auto-detect from HTML-only mail too."
+    },
+    {
+      "chat": "admin",
+      "role": "out",
+      "text": "ℹ️ Broadcast done — 1 delivered, 0 failed."
+    }
+  ]
+}

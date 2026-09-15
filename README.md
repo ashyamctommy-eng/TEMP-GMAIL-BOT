@@ -119,6 +119,29 @@ after commands (`otp`, `view`, …) are rejected as reserved.
   register there complies with that platform's terms, is your call — the bot
   only reads the mailbox you point it at.
 
+## Preview
+
+`preview/preview.png` is a rendered session — but not a mockup. It is produced by
+driving the real `BotHandlers` and `GmailPoller` against the fake Telegram/IMAP
+transports from `tests/`, capturing exactly what the bot emits, and rendering
+those strings in a Telegram-style layout:
+
+```bash
+python evidence/preview_session.py   # real code, fake transports -> preview/session.json
+python evidence/render_preview.py    # -> preview/preview.html
+python tools/cdp_shot.py "file://$PWD/preview/preview.html" preview/preview.png --width 1460
+```
+
+What it shows: onboarding, alias creation, four ingested emails (`/start`,
+`/generate`, push alerts, `/otp`, `/view`, `/history`), button presses, the
+"did you mean to create an alias?" confirmation for stray text, feedback
+delivery into the admin channel, and the admin's `/stats` + `/broadcast`.
+
+**Caveat:** this is the bot's real output over a simulated Gmail mailbox. It runs
+no HTTP calls and needs no bot token, so it proves the rendering and the logic —
+not that your Telegram account, channel ids and Gmail app password work. Only a
+live run does that.
+
 ## Tests
 
 ```bash

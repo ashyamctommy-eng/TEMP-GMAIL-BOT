@@ -84,6 +84,7 @@ class StoredMessage:
     subject: str
     otp: str | None
     links: list[str]
+    received_at: datetime
     preview: str = ""
     duplicate: bool = False
 
