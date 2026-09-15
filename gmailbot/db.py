@@ -30,6 +30,7 @@ from .models import (
     Alias,
     AliasAddResult,
     Message,
+    RequiredChannel,
     StoredMessage,
     from_iso,
     to_iso,
@@ -38,7 +39,7 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 #: Characters kept from a body when it is used purely for display.
 PREVIEW_CHARS = 220
@@ -89,6 +90,14 @@ CREATE TABLE IF NOT EXISTS feedback (
     feedback_text     TEXT,
     feedback_photo_id TEXT,
     created_at        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS required_channels (
+    chat_id     TEXT PRIMARY KEY,   -- '@username' (public) or '-100...' (private)
+    title       TEXT,
+    invite_link TEXT,
+    added_by    INTEGER,
+    added_at    TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS meta (
@@ -542,6 +551,43 @@ class Database:
                 (user_id, text, photo_id, to_iso(utcnow())),
             )
             return int(cursor.lastrowid)
+
+    # -------------------------------------------------------- join-guard info
+    def add_required_channel(
+        self,
+        chat_id: str,
+        title: str = "",
+        invite_link: str | None = None,
+        added_by: int | None = None,
+    ) -> None:
+        with self._write_lock, self.conn as conn:
+            conn.execute(
+                "INSERT INTO required_channels (chat_id, title, invite_link, added_by, added_at) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(chat_id) DO UPDATE SET title = excluded.title, "
+                "invite_link = COALESCE(excluded.invite_link, required_channels.invite_link)",
+                (chat_id, title, invite_link, added_by, to_iso(utcnow())),
+            )
+
+    def remove_required_channel(self, chat_id: str) -> bool:
+        with self._write_lock, self.conn as conn:
+            cursor = conn.execute(
+                "DELETE FROM required_channels WHERE chat_id = ?", (chat_id,)
+            )
+            return cursor.rowcount > 0
+
+    def list_required_channels(self) -> list[RequiredChannel]:
+        rows = self.conn.execute(
+            "SELECT chat_id, title, invite_link FROM required_channels ORDER BY added_at"
+        ).fetchall()
+        return [
+            RequiredChannel(
+                chat_id=row["chat_id"],
+                title=row["title"] or "",
+                invite_link=row["invite_link"],
+            )
+            for row in rows
+        ]
 
     # ------------------------------------------------------------------ meta
     def get_meta(self, key: str) -> str | None:

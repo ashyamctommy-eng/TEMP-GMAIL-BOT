@@ -6,7 +6,9 @@ open. So it needs a **worker**, not a web handler.
 **Every platform needs:**
 
 1. The env vars from `.env.example` (`BOT_TOKEN`, `GMAIL_EMAIL`,
-   `GMAIL_APP_PASSWORD`, `ADMIN_USER_ID`, `FEEDBACK_CHANNEL_ID`).
+   `GMAIL_APP_PASSWORD`, `ADMIN_USER_ID`, `FEEDBACK_CHANNEL_ID`). Optional:
+   `FORCE_JOIN` + `REQUIRED_CHANNELS` to make users join a channel first — you can
+   also add channels from inside Telegram with `/addchannel`.
 2. **1 replica** — two copies on one mailbox double-notify.
 3. A persistent path for `DB_PATH` / `LOG_PATH` (a volume in the cloud), or your
    aliases and codes are wiped on each deploy.

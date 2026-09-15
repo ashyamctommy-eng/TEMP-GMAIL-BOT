@@ -52,6 +52,7 @@ from . import formatting as fmt
 from .aliases import AliasGenerator, label_for, normalize, validation_error
 from .config import Config
 from .db import Database
+from .membership import MembershipGate
 from .models import Message, StoredMessage
 from .notify import Notification, Notifier, RateLimiter
 from .otp import OtpExtractor
@@ -115,6 +116,7 @@ class BotHandlers:
         extractor: OtpExtractor,
         notifier: Notifier,
         guard: ChannelGuard | None = None,
+        gate: MembershipGate | None = None,
     ) -> None:
         self.config = config
         self.db = db
@@ -122,6 +124,12 @@ class BotHandlers:
         self.extractor = extractor
         self.notifier = notifier
         self.guard = guard or ChannelGuard(config.feedback_channel_id)
+        self.gate = gate or MembershipGate(
+            db,
+            enabled=config.force_join_enabled,
+            cache_seconds=config.membership_cache_seconds,
+            admin_user_id=config.admin_user_id,
+        )
         self.generate_limit = RateLimiter(
             config.generate_per_hour, 3600, clock=getattr(time, "monotonic")
         )
@@ -142,6 +150,10 @@ class BotHandlers:
             "unban": self.unban,
             "broadcast": self.broadcast,
             "stats": self.stats,
+            "admin": self.admin,
+            "channels": self.channels,
+            "addchannel": self.addchannel,
+            "delchannel": self.delchannel,
         }
         for name, handler in commands.items():
             application.add_handler(CommandHandler(name, handler))
@@ -266,9 +278,13 @@ class BotHandlers:
         await self.start(update, context)
 
     async def cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        mode = (context.user_data or {}).pop("mode", None)
+        user_data = context.user_data if context.user_data is not None else {}
+        mode = user_data.pop("mode", None)
+        pending = user_data.pop("pending_admin", None)
         if mode == "feedback":
             await self._reply(update, fmt.notice("Feedback cancelled."))
+        elif pending:
+            await self._reply(update, fmt.notice(f"Cancelled '{pending}'."))
         else:
             await self._reply(update, fmt.notice("Nothing to cancel."))
 
@@ -505,6 +521,13 @@ class BotHandlers:
         if context.user_data is not None:
             context.user_data["uid"] = user.id
 
+        pending = (context.user_data or {}).get("pending_admin")
+        if pending:
+            if context.user_data is not None:
+                context.user_data.pop("pending_admin", None)
+            await self._finish_pending(update, context, pending, message.text)
+            return
+
         if (context.user_data or {}).get("mode") == "feedback":
             if context.user_data is not None:
                 context.user_data.pop("mode", None)
@@ -616,7 +639,9 @@ class BotHandlers:
         if not context.args:
             await self._reply(update, fmt.error("Usage: /broadcast <message>"))
             return
-        payload = " ".join(context.args)
+        await self._broadcast(update, context, " ".join(context.args))
+
+    async def _broadcast(self, update, context, payload: str) -> None:
         recipients = await self._db(self.db.all_user_ids)
         sent = failed = 0
         for user_id in recipients:
@@ -655,6 +680,104 @@ class BotHandlers:
         )
         await self._reply(update, text)
 
+    # ------------------------------------------------------ join-gate / channels
+    async def admin(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Admin panel: inline, colour-coded buttons for every admin action."""
+        if not self._admin_only(update):
+            await self._reply(update, fmt.error("Admin only command."))
+            return
+        stats = await self._db(self.db.stats)
+        channels = await self._db(self.db.list_required_channels)
+        text, markup = fmt.admin_panel(channels, stats=stats)
+        await self._reply(update, text, markup)
+
+    async def channels(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not self._admin_only(update):
+            return
+        channels = await self._db(self.db.list_required_channels)
+        text, markup = fmt.channels_admin(channels)
+        await self._reply(update, text, markup)
+
+    async def addchannel(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not self._admin_only(update):
+            return
+        if not context.args:
+            await self._reply(update, fmt.error("Usage: /addchannel @handle [invite link]"))
+            return
+        await self._add_channel(update, context, context.args[0], context.args[1:])
+
+    async def _add_channel(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        raw: str,
+        extra: list[str] | None = None,
+    ) -> None:
+        user = update.effective_user
+        assert user is not None
+        channel, warning = await self.gate.resolve(context.bot, raw)
+        if channel is None:
+            await self._reply(update, fmt.error(warning or "Could not resolve that channel."))
+            return
+        link = (extra or [None])[0] or channel.invite_link
+        await self._db(
+            self.db.add_required_channel, channel.chat_id, channel.title, link, user.id
+        )
+        self.gate.invalidate()
+        lines = [
+            f"✅ <b>{fmt.esc(channel.title)}</b> now required.",
+            f"ID: {fmt.code(channel.chat_id)}",
+        ]
+        lines.append(f"Link: {fmt.esc(link)}" if link else "No invite link — users only see the name.")
+        if warning:
+            lines.append(f"⚠️ {fmt.esc(warning)}")
+        lines.append("Users must join it before the bot answers.")
+        channels = await self._db(self.db.list_required_channels)
+        text, markup = fmt.channels_admin(channels)
+        await self._reply(update, "\n".join(lines) + "\n\n" + text, markup)
+
+    async def delchannel(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not self._admin_only(update):
+            return
+        if not context.args:
+            await self._reply(update, fmt.error("Usage: /delchannel @handle|id|number"))
+            return
+        await self._remove_channel(update, context.args[0])
+
+    async def _remove_channel(self, update: Update, raw: str) -> None:
+        channels = await self._db(self.db.list_required_channels)
+        target = self._match_channel(channels, raw)
+        if target is None:
+            await self._reply(
+                update, fmt.error(f"No required channel matches {raw!r}. See /channels.")
+            )
+            return
+        await self._db(self.db.remove_required_channel, target.chat_id)
+        self.gate.invalidate()
+        remaining = await self._db(self.db.list_required_channels)
+        text, markup = fmt.channels_admin(remaining)
+        await self._reply(
+            update, f"🗑 Removed <b>{fmt.esc(target.display)}</b>.\n\n{text}", markup
+        )
+
+    @staticmethod
+    def _match_channel(channels: list, raw: str):
+        """Match by id, @handle, title, or 1-based position in /channels."""
+        candidate = (raw or "").strip()
+        if candidate.startswith(("https://t.me/", "http://t.me/", "t.me/")):
+            candidate = "@" + candidate.split("t.me/", 1)[1].strip("/").split("/", 1)[0]
+        if candidate.isdigit():
+            index = int(candidate) - 1
+            if 0 <= index < len(channels):
+                return channels[index]
+        lowered = candidate.lower().lstrip("@")
+        for channel in channels:
+            if channel.chat_id.lower().lstrip("@") == lowered:
+                return channel
+            if channel.title and channel.title.lower() == lowered:
+                return channel
+        return None
+
     # ------------------------------------------------------------- callbacks
     async def on_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
@@ -666,6 +789,27 @@ class BotHandlers:
         action, params = cb.parse(query.data or "")
         if not action:
             await query.answer("That button is no longer usable.")
+            return
+        if query.data == cb.JOIN_VERIFY:
+            self.gate.invalidate(user.id)
+            missing = await self.gate.missing(context.bot, user.id)
+            if missing:
+                await query.answer("Still not a member yet.", show_alert=True)
+                return
+            await query.answer("Thanks! You're verified.")
+            await self._reply(
+                update,
+                fmt.welcome(self.config, max_aliases=self.config.max_aliases_per_user),
+                fmt.menu_keyboard(),
+                edit=True,
+            )
+            return
+        if query.data.startswith(cb.ADMIN_PREFIX):
+            if user.id != self.config.admin_user_id:
+                await query.answer("Admin only.", show_alert=True)
+                return
+            await query.answer()
+            await self._admin_action(update, context, query.data)
             return
         if await self._db(self.db.is_banned, user.id):
             await query.answer("You are banned from using this bot.", show_alert=True)
@@ -727,6 +871,78 @@ class BotHandlers:
         except RetryAfter as exc:
             await asyncio.sleep(float(getattr(exc, "retry_after", 1)))
 
+    async def _admin_action(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, data: str
+    ) -> None:
+        """Every admin-panel button lands here (admin already re-verified)."""
+        if data == cb.ADMIN_CLOSE:
+            message = update.effective_message
+            if message is not None:
+                try:
+                    await message.delete()
+                except TelegramError:
+                    await self._reply(update, fmt.notice("Panel closed."), edit=True)
+            return
+        if data == cb.ADMIN_STATS:
+            stats = await self._db(self.db.stats)
+            channels = await self._db(self.db.list_required_channels)
+            text, markup = fmt.admin_panel(channels, stats=stats)
+            await self._reply(update, text, markup, edit=True)
+            return
+        if data in (cb.ADMIN_PANEL,):
+            stats = await self._db(self.db.stats)
+            channels = await self._db(self.db.list_required_channels)
+            text, markup = fmt.admin_panel(channels, stats=stats)
+            await self._reply(update, text, markup, edit=True)
+            return
+        if data in (cb.ADMIN_CHANNELS, cb.ADMIN_DEL_CHANNEL):
+            channels = await self._db(self.db.list_required_channels)
+            text, markup = fmt.channels_admin(channels)
+            await self._reply(update, text, markup, edit=True)
+            return
+        if data == cb.ADMIN_BROADCAST:
+            if context.user_data is not None:
+                context.user_data["pending_admin"] = "broadcast"
+            await self._reply(
+                update,
+                fmt.notice("Send the broadcast text now (or /cancel)."),
+                edit=True,
+            )
+            return
+        if data in (cb.ADMIN_BAN, cb.ADMIN_UNBAN):
+            action = "ban" if data == cb.ADMIN_BAN else "unban"
+            if context.user_data is not None:
+                context.user_data["pending_admin"] = action
+            await self._reply(
+                update, fmt.notice(f"Send the numeric user id to {action} (or /cancel)."),
+                edit=True,
+            )
+            return
+        if data == cb.ADMIN_ADD_CHANNEL:
+            if context.user_data is not None:
+                context.user_data["pending_admin"] = "addchannel"
+            await self._reply(
+                update,
+                fmt.notice(
+                    "Send the channel @handle, a t.me link, or its -100… id "
+                    "(add the bot as an admin there first). /cancel to stop."
+                ),
+                edit=True,
+            )
+            return
+        removed = cb.parse_remove_channel(data)
+        if removed:
+            channels = await self._db(self.db.list_required_channels)
+            target = self._match_channel(channels, removed)
+            if target is not None:
+                await self._db(self.db.remove_required_channel, target.chat_id)
+                self.gate.invalidate()
+            remaining = await self._db(self.db.list_required_channels)
+            text, markup = fmt.channels_admin(remaining)
+            await self._reply(update, text, markup, edit=True)
+            return
+        await self._reply(update, fmt.error("Unknown admin action."), edit=True)
+
     async def _set_active(self, update: Update, alias: str, active: bool) -> None:
         user = update.effective_user
         assert user is not None
@@ -758,6 +974,27 @@ class BotHandlers:
             update,
             fmt.secret_reveal(label, value, "Tap the value to copy it."),
         )
+
+    async def _finish_pending(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, action: str, value: str
+    ) -> None:
+        """Complete an admin action that needed a typed argument."""
+        value = value.strip()
+        if action in ("ban", "unban"):
+            try:
+                target = int(value)
+            except ValueError:
+                await self._reply(update, fmt.error("That is not a numeric user id."))
+                return
+            await self._db(self.db.set_banned, target, action == "ban")
+            await self._reply(
+                update,
+                fmt.notice(f"User {target} {'banned' if action == 'ban' else 'unbanned'}."),
+            )
+        elif action == "broadcast":
+            await self._broadcast(update, context, value)
+        elif action == "addchannel":
+            await self._add_channel(update, context, value)
 
     # ---------------------------------------------------------------- errors
     async def on_error(

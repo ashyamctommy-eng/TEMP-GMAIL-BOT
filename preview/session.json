@@ -26,6 +26,51 @@
     {
       "chat": "user",
       "role": "out",
+      "text": "🔒 <b>Join required</b>\n\nJoin to use this bot:\n• <b>Native Codes</b>\n\nThen tap <b>I've joined</b> below.",
+      "buttons": [
+        [
+          "➡️ Join Native Codes"
+        ],
+        [
+          "✅ I've joined"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "note",
+      "text": "user taps ✅ I've joined…"
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "‹button press› jv"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>Commands</b>\n/generate – new random alias\n/generate &lt;name&gt; – pick your own\n/history – your aliases\n/view &lt;alias&gt; – messages for one alias\n/otp – recent codes and verification links\n/delete &lt;alias&gt; – stop showing an alias\n/feedback – tell the admin something\n\nMessages are kept for 1 hour and then deleted automatically. Up to 25 aliases per account.\n\nTap <b>New alias</b> to get started.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "buttons": [
+        [
+          "🎲 New alias"
+        ],
+        [
+          "🔑 OTPs",
+          "📋 My aliases"
+        ],
+        [
+          "💬 Feedback"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/start"
+    },
+    {
+      "chat": "user",
+      "role": "out",
       "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>Commands</b>\n/generate – new random alias\n/generate &lt;name&gt; – pick your own\n/history – your aliases\n/view &lt;alias&gt; – messages for one alias\n/otp – recent codes and verification links\n/delete &lt;alias&gt; – stop showing an alias\n/feedback – tell the admin something\n\nMessages are kept for 1 hour and then deleted automatically. Up to 25 aliases per account.\n\nTap <b>New alias</b> to get started.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
@@ -272,12 +317,83 @@
     {
       "chat": "user",
       "role": "in",
-      "text": "/stats"
+      "text": "/admin"
     },
     {
       "chat": "admin",
       "role": "out",
-      "text": "📊 <b>Statistics</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages stored: 4\n💬 Feedback: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚"
+      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 4\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "buttons": [
+        [
+          "📊 Stats",
+          "📣 Broadcast"
+        ],
+        [
+          "🚫 Ban",
+          "✅ Unban"
+        ],
+        [
+          "➕ Add channel",
+          "➖ Remove channel"
+        ],
+        [
+          "📋 Manage channels",
+          "🔄 Refresh"
+        ],
+        [
+          "✖️ Close"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "‹button press› ad:stats"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 4\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "buttons": [
+        [
+          "📊 Stats",
+          "📣 Broadcast"
+        ],
+        [
+          "🚫 Ban",
+          "✅ Unban"
+        ],
+        [
+          "➕ Add channel",
+          "➖ Remove channel"
+        ],
+        [
+          "📋 Manage channels",
+          "🔄 Refresh"
+        ],
+        [
+          "✖️ Close"
+        ]
+      ]
+    },
+    {
+      "chat": "user",
+      "role": "in",
+      "text": "/channels"
+    },
+    {
+      "chat": "admin",
+      "role": "out",
+      "text": "📣 <b>Required channels</b>\n\n1. <b>Native Codes</b> <code>@nativecodes</code> — https://t.me/nativecodes\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "buttons": [
+        [
+          "🗑 Remove Native Codes"
+        ],
+        [
+          "➕ Add channel",
+          "⬅️ Back"
+        ]
+      ]
     },
     {
       "chat": "user",

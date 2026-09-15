@@ -25,6 +25,23 @@ FEEDBACK = "a:fb"
 HELP = "a:help"
 START = "a:start"
 
+# Force-join
+JOIN_VERIFY = "jv"
+
+# Admin panel. Everything under this prefix is re-checked against ADMIN_USER_ID
+# in the callback handler, so a forwarded/stale button cannot be replayed by a
+# non-admin.
+ADMIN_PREFIX = "ad"
+ADMIN_PANEL = "ad:panel"
+ADMIN_STATS = "ad:stats"
+ADMIN_BROADCAST = "ad:bc"
+ADMIN_BAN = "ad:ban"
+ADMIN_UNBAN = "ad:unban"
+ADMIN_CHANNELS = "ad:chs"
+ADMIN_ADD_CHANNEL = "ad:addch"
+ADMIN_DEL_CHANNEL = "ad:delch"
+ADMIN_CLOSE = "ad:close"
+
 
 def _join(*parts: str) -> str:
     data = SEP.join(str(part) for part in parts)
@@ -68,6 +85,21 @@ def parse(data: str) -> tuple[str, list[str]]:
     action, _, rest = data.partition(SEP)
     params = rest.split(SEP) if rest else []
     return action, params
+
+
+def remove_channel(chat_id: str) -> str:
+    return _join("ad", "rmch", chat_id)
+
+
+def parse_remove_channel(data: str) -> str | None:
+    action, params = parse(data)
+    if action != "ad" or param0(params) != "rmch" or len(params) < 2:
+        return None
+    return params[1]
+
+
+def param0(params: list[str]) -> str:
+    return params[0] if params else ""
 
 
 def parse_view(data: str) -> tuple[str | None, int]:

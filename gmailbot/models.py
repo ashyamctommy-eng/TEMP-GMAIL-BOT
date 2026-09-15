@@ -90,6 +90,19 @@ class StoredMessage:
 
 
 @dataclass(frozen=True)
+class RequiredChannel:
+    """A channel a user must join before the bot will talk to them."""
+
+    chat_id: str          # "@username" for public, "-100..." for private
+    title: str = ""
+    invite_link: str | None = None
+
+    @property
+    def display(self) -> str:
+        return self.title or self.chat_id
+
+
+@dataclass(frozen=True)
 class AliasAddResult:
     ok: bool
     reason: str = ""

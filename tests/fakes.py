@@ -28,6 +28,7 @@ class FakeMessage:
         self.caption = caption
         self.photo = photo or []
         self.sent: list[Sent] = []
+        self.deleted = False
 
     async def reply_text(self, text, reply_markup=None, parse_mode=None, **kwargs):
         self.sent.append(Sent(text, reply_markup, parse_mode))
@@ -40,6 +41,9 @@ class FakeMessage:
     async def edit_text(self, text, reply_markup=None, parse_mode=None, **kwargs):
         self.sent.append(Sent(text, reply_markup, parse_mode))
         return self
+
+    async def delete(self):
+        self.deleted = True
 
     @property
     def last(self) -> Sent:
@@ -81,6 +85,25 @@ class FakeChatMember:
         self.can_send_messages = can_send_messages
 
 
+class FakeChat:
+    """Minimal Chat: get_chat() / resolve() only need type, username, title."""
+
+    def __init__(
+        self,
+        chat_id: object = -1001,
+        *,
+        type: str = "channel",
+        username: str | None = "nativecodes",
+        title: str = "Native Codes",
+        invite_link: str | None = None,
+    ):
+        self.id = chat_id
+        self.type = type
+        self.username = username
+        self.title = title
+        self.invite_link = invite_link
+
+
 class FakeBot:
     """Records outbound calls; ``fail`` can inject errors per chat id."""
 
@@ -94,6 +117,12 @@ class FakeBot:
         self.commands: list[Any] = []
         self.fail_for: set[int] = set()
         self.get_chat_member_calls = 0
+        # Join-gate controls: status per user id, and resolved chats by handle.
+        self.member_status: dict[int, str] = {}
+        self.default_member_status: str | None = None
+        self.chats: dict[str, FakeChat] = {}
+        self.unresolvable: set[str] = set()
+        self.membership_calls: list[tuple[str, int]] = []
 
     async def send_message(self, chat_id, text, reply_markup=None, parse_mode=None, **kwargs):
         self.get_chat_member_calls += 0
@@ -126,7 +155,36 @@ class FakeBot:
 
     async def get_chat_member(self, chat_id, user_id):
         self.get_chat_member_calls += 1
+        self.membership_calls.append((str(chat_id), int(user_id)))
+        if str(chat_id) in self.unresolvable:
+            from telegram.error import TelegramError
+
+            raise TelegramError(f"chat {chat_id} not found")
+        if user_id == self.id:
+            # the bot's own status must be overridable too (admin-in-channel checks)
+            return FakeChatMember(
+                self.member_status.get(self.id, self.member.status),
+                self.member.can_send_messages,
+            )
+        if self.default_member_status is not None or user_id in self.member_status:
+            return FakeChatMember(self.member_status.get(user_id, self.default_member_status or "left"))
         return self.member
+
+    async def get_chat(self, chat_id):
+        key = str(chat_id)
+        if key in self.unresolvable or key not in self.chats:
+            from telegram.error import TelegramError
+
+            raise TelegramError(f"Bad Request: chat not found ({chat_id})")
+        return self.chats[key]
+
+    async def export_chat_invite_link(self, chat_id):
+        key = str(chat_id)
+        if key in self.chats and self.chats[key].invite_link:
+            return self.chats[key].invite_link
+        from telegram.error import TelegramError
+
+        raise TelegramError("not enough rights to export the invite link")
 
     async def set_my_commands(self, commands, **kwargs):
         self.commands = list(commands)

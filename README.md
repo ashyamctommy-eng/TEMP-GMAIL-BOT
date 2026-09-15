@@ -6,22 +6,27 @@ to you in Telegram with the OTP code and verification links already extracted.
 
 **Dev contact:** Telegram [@Poriot_ke](https://t.me/Poriot_ke) · Channel [@nativecodes](https://t.me/nativecodes)
 
+I can require users to join my channels first — until they do, the bot answers
+with a join prompt and nothing else. I manage that list from inside Telegram.
+
 ## Screenshots
 
 <p align="center">
-  <img src="preview/shots/01-start.png" width="235" alt="Welcome screen">
-  <img src="preview/shots/02-alias-ready.png" width="235" alt="New alias">
-  <img src="preview/shots/03-otp-alert.png" width="235" alt="OTP alert">
+  <img src="preview/shots/01-start.png" width="175" alt="Welcome screen">
+  <img src="preview/shots/02-alias-ready.png" width="175" alt="New alias">
+  <img src="preview/shots/03-otp-alert.png" width="175" alt="OTP alert">
+  <img src="preview/shots/04-codes-list.png" width="175" alt="Recent codes">
 </p>
 <p align="center">
-  <img src="preview/shots/04-codes-list.png" width="235" alt="Recent codes">
-  <img src="preview/shots/05-messages.png" width="235" alt="Messages for an alias">
-  <img src="preview/shots/06-feedback-channel.png" width="235" alt="Admin feedback channel">
+  <img src="preview/shots/05-messages.png" width="175" alt="Messages for an alias">
+  <img src="preview/shots/06-feedback-channel.png" width="175" alt="Feedback channel">
+  <img src="preview/shots/07-join-gate.png" width="175" alt="Force-join gate">
+  <img src="preview/shots/08-admin-panel.png" width="175" alt="Admin panel">
 </p>
 
 Rendered from the bot's own output (`preview/preview.png` = full session), not
-mockups. They show rendering and logic — a live run is what proves your token,
-channel and Gmail password.
+mockups: join gate, welcome, alias, OTP alert, codes, messages, feedback channel,
+admin panel. They show rendering and logic — a live run proves your credentials.
 
 ## Quick start
 
@@ -56,9 +61,19 @@ The bot registers these with Telegram on startup — no BotFather setup.
 | `/delete <alias>` | deactivate an alias |
 | `/feedback` | send text or a screenshot to the admin |
 | `/cancel` | leave feedback mode |
-| `/stats`, `/ban`, `/unban`, `/broadcast` | admin only |
+| `/admin` | **admin panel** — colour-coded inline buttons for every admin action |
+| `/channels` | list required channels, remove them with one tap |
+| `/addchannel <@handle> [link]` | require a channel before the bot answers |
+| `/delchannel <@handle\|id\|number>` | stop requiring a channel |
+| `/stats`, `/ban`, `/unban`, `/broadcast` | admin only (also on the panel) |
 
-Send a plain word and it asks before creating an alias.
+Send a plain word and it asks before creating an alias. `/ban`, `/unban`,
+`/broadcast` and `/addchannel` also run from the panel — it asks for the value.
+
+**Force-join:** users must be in every required channel before any command works.
+The owner is never blocked, and if a channel cannot be checked (bot not admin,
+channel deleted) the user is let through and it is logged, so I can't lock
+everyone out by accident.
 
 ## Settings
 
@@ -77,6 +92,9 @@ Everything is env config — I never hardcode it.
 | `INITIAL_LOOKBACK_DAYS` | `1` | how far back the first poll looks |
 | `MAX_ALIASES_PER_USER` / `GENERATE_PER_HOUR` | `25` / `20` | per-user limits |
 | `IMAP_MAILBOX` | `INBOX` | set `[Gmail]/All Mail` if a filter archives alias mail |
+| `FORCE_JOIN` | `true` | require channel membership before the bot answers |
+| `REQUIRED_CHANNELS` | empty | seed list, e.g. `@nativecodes,@other` (then use `/addchannel`) |
+| `MEMBERSHIP_CACHE_SECONDS` | `300` | how long a membership result is trusted |
 | `BOT_BRAND_NAME` | `𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕` | name in the welcome, description and captions |
 | `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …` on every message |
 | `BOT_PHOTO_PATH` / `SEND_BRAND_PHOTO` | bundled image / `true` | photo on `/start` and OTP alerts |
@@ -84,8 +102,8 @@ Everything is env config — I never hardcode it.
 
 ## How it works
 
-Alias mail is matched by tag, stored in SQLite, and pushed to the owner of that
-alias. Polling tracks the last IMAP UID and opens the mailbox **read-only** — your
+Add the bot as an **admin in the channel** so join checks work. Alias mail is
+matched by tag, stored in SQLite, and pushed to the owner of that alias. Polling tracks the last IMAP UID and opens the mailbox **read-only** — your
 unread state is never touched, and a message you open on your phone first still
 reaches the bot. Duplicates are dropped by RFC `Message-ID`, codes expire after
 `MESSAGE_TTL_SECONDS`, and OTP detection is scored, so a wrong code is never

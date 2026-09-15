@@ -13,6 +13,7 @@ from gmailbot.notify import Notifier
 from gmailbot.otp import OtpExtractor
 from tests.fakes import (
     FakeBot,
+    FakeChat,
     FakeChatMember,
     FakeContext,
     FakeMessage,
@@ -204,7 +205,7 @@ def test_generate_rejects_taken_name(handlers, bot, db):
     assert db.alias_owner("popular") == 1
 
 
-def make_handlers(config, db, **overrides):
+def make_handlers(config, db, *, gate=None, **overrides):
     """Construct a fresh handler set with overridden config values."""
     tuned = replace(config, **overrides)
     return BotHandlers(
@@ -214,6 +215,7 @@ def make_handlers(config, db, **overrides):
         extractor=OtpExtractor(),
         notifier=Notifier(lambda stored: None),
         guard=ChannelGuard(tuned.feedback_channel_id),
+        gate=gate,
     )
 
 
@@ -424,3 +426,194 @@ def test_error_handler_does_not_raise(handlers, bot, db):
     context.error = RuntimeError("boom")
     run(handlers.on_error(update, context))
     assert "Something went wrong" in update.effective_message.last.text
+
+
+# ------------------------------------------------------------- admin panel
+def panel_buttons(markup):
+    return [(button.text, button.style, button.callback_data) for row in markup.inline_keyboard for button in row]
+
+
+def test_admin_panel_is_admin_only(handlers, bot, db):
+    update, context = make_command_update("admin", user_id=7, bot=bot)
+    run(handlers.admin(update, context))
+    assert "Admin only" in update.effective_message.last.text
+    assert update.effective_message.last.markup is None
+
+
+def test_admin_panel_has_coloured_buttons_for_every_action(handlers, bot, db):
+    update, context = make_command_update("admin", user_id=ADMIN, bot=bot)
+    run(handlers.admin(update, context))
+    text = update.effective_message.last.text
+    buttons = panel_buttons(update.effective_message.last.markup)
+
+    assert "Admin panel" in text
+    callbacks = {data for _, _, data in buttons}
+    assert {
+        "ad:stats", "ad:bc", "ad:ban", "ad:unban",
+        "ad:addch", "ad:delch", "ad:chs", "ad:panel", "ad:close",
+    } <= callbacks
+    styles = {style for _, style, _ in buttons}
+    assert {"primary", "success", "danger"} <= {str(s.value if hasattr(s, "value") else s) for s in styles}
+    # dangerous actions really are the red ones
+    red = {data for _, style, data in buttons if str(getattr(style, "value", style)) == "danger"}
+    assert {"ad:ban", "ad:delch", "ad:close"} <= red
+
+
+def test_panel_callback_from_a_non_admin_is_refused(handlers, bot, db):
+    update, context, query = make_callback_update("ad:stats", user_id=7, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert query.answers == ["Admin only."]
+    assert query.edits == []
+
+
+def test_panel_stats_callback_edits_in_place(handlers, bot, db):
+    db.add_alias(1, "tiger123")
+    update, context, query = make_callback_update("ad:stats", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert query.edits and "Aliases: 1" in query.edits[-1].text
+
+
+def test_panel_ban_flow_asks_then_applies(handlers, bot, db):
+    update, context, query = make_callback_update("ad:ban", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert context.user_data["pending_admin"] == "ban"
+    assert "user id" in query.edits[-1].text.lower()
+
+    update2, context2 = make_text_update("555", user_id=ADMIN, bot=bot, user_data=context.user_data)
+    run(handlers.on_text(update2, context2))
+    assert db.is_banned(555)
+    assert "pending_admin" not in context2.user_data
+
+
+def test_panel_ban_flow_rejects_junk(handlers, bot, db):
+    update, context, _ = make_callback_update("ad:ban", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    update2, context2 = make_text_update("not-a-number", user_id=ADMIN, bot=bot, user_data=context.user_data)
+    run(handlers.on_text(update2, context2))
+    assert "not a numeric user id" in update2.effective_message.last.text
+
+
+def test_panel_broadcast_flow_sends_to_everyone(handlers, bot, db):
+    for user_id in (1, 2, 3):
+        db.ensure_user(user_id)
+    update, context, _ = make_callback_update("ad:bc", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert context.user_data["pending_admin"] == "broadcast"
+
+    update2, context2 = make_text_update("Server maintenance tonight", user_id=ADMIN, bot=bot, user_data=context.user_data)
+    run(handlers.on_text(update2, context2))
+
+    recipients = {chat_id for chat_id, _, _ in bot.messages}
+    # the admin is a registered user too (ensure_user on first interaction), so
+    # they receive the broadcast as well as 1, 2 and 3.
+    assert {1, 2, 3} <= recipients
+    assert all(text == "Server maintenance tonight" for _, text, _ in bot.messages)
+    assert f"{len(recipients)} delivered" in update2.effective_message.last.text
+
+
+def test_panel_add_channel_flow(handlers, bot, db):
+    bot.chats["@nativecodes"] = FakeChat(-1001, username="nativecodes", title="Native Codes")
+    update, context, _ = make_callback_update("ad:addch", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert context.user_data["pending_admin"] == "addchannel"
+
+    update2, context2 = make_text_update("@nativecodes", user_id=ADMIN, bot=bot, user_data=context.user_data)
+    run(handlers.on_text(update2, context2))
+    channels = db.list_required_channels()
+    assert [c.chat_id for c in channels] == ["@nativecodes"]
+    assert channels[0].invite_link == "https://t.me/nativecodes"
+    assert "now required" in update2.effective_message.last.text
+
+
+def test_cancel_clears_a_pending_admin_action(handlers, bot, db):
+    update, context, _ = make_callback_update("ad:ban", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    update2, context2 = make_command_update("cancel", user_id=ADMIN, bot=bot, user_data=context.user_data)
+    run(handlers.cancel(update2, context2))
+    assert "pending_admin" not in context2.user_data
+    assert "Cancelled" in update2.effective_message.last.text
+
+
+def test_panel_close_deletes_the_message(handlers, bot, db):
+    update, context, query = make_callback_update("ad:close", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert query.message.deleted is True
+
+
+# ------------------------------------------------------- channel management
+def test_channels_command_lists_with_remove_buttons(handlers, bot, db):
+    db.add_required_channel("@nativecodes", "Native Codes", "https://t.me/nativecodes")
+    db.add_required_channel("-100999", "Private", None)
+    update, context = make_command_update("channels", user_id=ADMIN, bot=bot)
+    run(handlers.channels(update, context))
+    text = update.effective_message.last.text
+    assert "1." in text and "Native Codes" in text and "2." in text and "Private" in text
+    data = [b.callback_data for row in update.effective_message.last.markup.inline_keyboard for b in row]
+    assert "ad:rmch:@nativecodes" in data
+
+
+def test_remove_channel_button_removes_it(handlers, bot, db):
+    db.add_required_channel("@nativecodes", "Native Codes", None)
+    update, context, query = make_callback_update("ad:rmch:@nativecodes", user_id=ADMIN, bot=bot)
+    run(handlers.on_callback(update, context))
+    assert db.list_required_channels() == []
+    assert "None yet" in query.edits[-1].text
+
+
+def test_addchannel_command_stores_the_channel(handlers, bot, db):
+    bot.chats["@nativecodes"] = FakeChat(-1001, username="nativecodes", title="Native Codes")
+    update, context = make_command_update("addchannel", ["@nativecodes"], user_id=ADMIN, bot=bot)
+    run(handlers.addchannel(update, context))
+    assert db.list_required_channels()[0].chat_id == "@nativecodes"
+
+
+def test_addchannel_warns_when_the_bot_is_not_admin(handlers, bot, db):
+    bot.chats["@nativecodes"] = FakeChat(-1001, username="nativecodes", title="Native Codes")
+    bot.member_status[bot.id] = "left"
+    update, context = make_command_update("addchannel", ["@nativecodes"], user_id=ADMIN, bot=bot)
+    run(handlers.addchannel(update, context))
+    assert "not an admin" in update.effective_message.last.text
+
+
+def test_addchannel_usage_and_admin_only(handlers, bot, db):
+    update, context = make_command_update("addchannel", user_id=ADMIN, bot=bot)
+    run(handlers.addchannel(update, context))
+    assert "Usage" in update.effective_message.last.text
+
+    update2, context2 = make_command_update("addchannel", ["@x"], user_id=7, bot=bot)
+    run(handlers.addchannel(update2, context2))
+    assert update2.effective_message.sent == []
+
+
+def test_delchannel_by_handle_and_by_index(handlers, bot, db):
+    db.add_required_channel("@one", "One", None)
+    db.add_required_channel("@two", "Two", None)
+
+    update, context = make_command_update("delchannel", ["2"], user_id=ADMIN, bot=bot)
+    run(handlers.delchannel(update, context))
+    assert [c.chat_id for c in db.list_required_channels()] == ["@one"]
+
+    update2, context2 = make_command_update("delchannel", ["@one"], user_id=ADMIN, bot=bot)
+    run(handlers.delchannel(update2, context2))
+    assert db.list_required_channels() == []
+
+
+def test_delchannel_reports_an_unknown_channel(handlers, bot, db):
+    update, context = make_command_update("delchannel", ["@nope"], user_id=ADMIN, bot=bot)
+    run(handlers.delchannel(update, context))
+    assert "No required channel matches" in update.effective_message.last.text
+
+
+# --------------------------------------------------------------- verification
+def test_verify_button_unlocks_the_bot(handlers, bot, db):
+    db.add_required_channel("@nativecodes", "Native Codes", None)
+    bot.default_member_status = "left"
+    update, context, query = make_callback_update("jv", bot=bot, user_id=7)
+    run(handlers.on_callback(update, context))
+    assert "Still not a member" in str(query.answers[0])
+
+    bot.member_status[7] = "member"
+    update2, context2, query2 = make_callback_update("jv", bot=bot, user_id=7)
+    run(handlers.on_callback(update2, context2))
+    assert "verified" in str(query2.answers[0]).lower()
+    assert query2.edits and "TempGail" or "𝑻𝒆𝒎𝒑" in query2.edits[-1].text

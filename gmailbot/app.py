@@ -5,14 +5,15 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from telegram import BotCommand, BotCommandScopeChat
-from telegram.ext import Application
+from telegram import BotCommand, BotCommandScopeChat, Update
+from telegram.ext import Application, TypeHandler
 
 from .ai import make_openrouter_lookup
 from .aliases import AliasGenerator
 from .config import Config, setup_logging
 from .db import Database
 from .handlers import BotHandlers, ChannelGuard, build_notification
+from .membership import MembershipGate
 from .mail import GmailPoller
 from .notify import Notifier
 from .otp import OtpExtractor
@@ -37,7 +38,11 @@ COMMANDS = [
 #: Admin commands are registered for the owner only, so they do not clutter (or
 #: advertise themselves in) everybody else's menu.
 ADMIN_COMMANDS = COMMANDS + [
+    BotCommand("admin", "Admin panel"),
     BotCommand("stats", "Usage statistics"),
+    BotCommand("channels", "Required channels"),
+    BotCommand("addchannel", "Require a channel to use the bot"),
+    BotCommand("delchannel", "Stop requiring a channel"),
     BotCommand("ban", "Ban a user"),
     BotCommand("unban", "Unban a user"),
     BotCommand("broadcast", "Message every user"),
@@ -69,6 +74,12 @@ def build_application(config: Config) -> Application:
         on_message=notifier.emit,
         extractor=extractor,
     )
+    gate = MembershipGate(
+        db,
+        enabled=config.force_join_enabled,
+        cache_seconds=config.membership_cache_seconds,
+        admin_user_id=config.admin_user_id,
+    )
     handlers = BotHandlers(
         config,
         db,
@@ -76,7 +87,15 @@ def build_application(config: Config) -> Application:
         extractor=extractor,
         notifier=notifier,
         guard=ChannelGuard(config.feedback_channel_id),
+        gate=gate,
     )
+    # Deploy-time seed; /addchannel and /delchannel manage it at runtime after this.
+    for handle in config.required_channels_seed:
+        if db.list_required_channels() and handle in {
+            channel.chat_id for channel in db.list_required_channels()
+        }:
+            continue
+        db.add_required_channel(handle, handle, None, config.admin_user_id)
 
     async def post_init(application: Application) -> None:
         # Everything a user sees before typing anything is registered here, so a
@@ -125,6 +144,8 @@ def build_application(config: Config) -> Application:
         .build()
     )
     handlers.register(application)
+    # Runs before every other handler (group -1) and stops non-members there.
+    application.add_handler(TypeHandler(Update, gate.middleware), group=-1)
     application.bot_data["db"] = db
     application.bot_data["poller"] = poller
     return application

@@ -30,10 +30,12 @@ from gmailbot.handlers import (  # noqa: E402
     build_notification,
 )
 from gmailbot.mail import GmailPoller  # noqa: E402
+from gmailbot.membership import MembershipGate  # noqa: E402
 from gmailbot.notify import Notifier  # noqa: E402
 from gmailbot.otp import OtpExtractor  # noqa: E402
 from tests.fakes import (  # noqa: E402
     FakeBot,
+    FakeChat,
     FakeChatMember,
     FakeContext,
     FakeMailbox,
@@ -122,6 +124,9 @@ def build(tmp: Path):
     db = Database(config.db_path)
     bot = FakeBot(FakeChatMember("administrator"))
     notifier = Notifier(build_notification(config))
+    gate = MembershipGate(
+        db, enabled=True, cache_seconds=300, admin_user_id=ADMIN_ID
+    )
     handlers = BotHandlers(
         config,
         db,
@@ -129,8 +134,9 @@ def build(tmp: Path):
         extractor=OtpExtractor(),
         notifier=notifier,
         guard=ChannelGuard(config.feedback_channel_id),
+        gate=gate,
     )
-    return config, db, bot, handlers
+    return config, db, bot, handlers, gate
 
 
 def run_command(handlers, bot, name: str, args=None, *, user_id=USER_ID, typed=None):
@@ -159,7 +165,38 @@ def main() -> int:
     tmp.mkdir(parents=True, exist_ok=True)
     for leftover in tmp.glob("preview.db*"):
         leftover.unlink()
-    config, db, bot, handlers = build(tmp)
+    config, db, bot, handlers, gate = build(tmp)
+
+    # 0. force-join gate ----------------------------------------------------
+    # A channel is required, so the real gate intercepts the first /start.
+    db.add_required_channel("@nativecodes", "Native Codes", "https://t.me/nativecodes")
+    bot.chats["@nativecodes"] = FakeChat(-1001, username="nativecodes", title="Native Codes")
+    bot.default_member_status = "left"      # the user has not joined yet
+    join_message = FakeMessage(text="/start")
+    join_update = FakeUpdate(
+        user=FakeUser(USER_ID, first_name="Theta", username="theta_test"),
+        message=join_message,
+    )
+    join_context = FakeContext(bot=bot)
+    in_bubble("/start")
+    try:
+        asyncio.run(gate.middleware(join_update, join_context))
+    except Exception:  # ApplicationHandlerStop -- that is the gate doing its job
+        pass
+    drain(join_message)
+    record("user", "note", "user taps ✅ I've joined…")
+    in_bubble("‹button press› jv")
+    bot.member_status[USER_ID] = "member"   # the membership check now succeeds
+    gate.invalidate(USER_ID)
+    verified = FakeMessage(text="(verify)")
+    verified_update = FakeUpdate(
+        user=FakeUser(USER_ID, first_name="Theta", username="theta_test"),
+        message=verified,
+        query=FakeQuery(data="jv", user=FakeUser(USER_ID), message=verified),
+    )
+    asyncio.run(handlers.on_callback(verified_update, FakeContext(bot=bot)))
+    drain_query(verified_update.callback_query)
+    drain(verified)
 
     # 1. onboarding ---------------------------------------------------------
     run_command(handlers, bot, "start")
@@ -279,7 +316,9 @@ def main() -> int:
 
     # 7. admin --------------------------------------------------------------
     record("admin", "note", "↔️ the admin's own chat with the bot")
-    run_command(handlers, bot, "stats", user_id=ADMIN_ID)
+    run_command(handlers, bot, "admin", user_id=ADMIN_ID)
+    press_button(handlers, bot, "ad:stats", user_id=ADMIN_ID)
+    run_command(handlers, bot, "channels", user_id=ADMIN_ID)
     run_command(handlers, bot, "broadcast", ["Heads up: codes now auto-detect from HTML-only mail too."], user_id=ADMIN_ID)
 
     CHAT_LABELS["user"] = f"{config.brand_name} · @theta_test"
@@ -304,6 +343,7 @@ def main() -> int:
         )
     )
     print(f"alias used   : {address}")
+    print(f"required     : {[c.chat_id for c in db.list_required_channels()]}")
     print(f"events       : {len(events)}")
     print(f"messages row : {db.stats()['messages']} stored, {db.stats()['feedback']} feedback")
     print(f"wrote        : {out.relative_to(ROOT)}")

@@ -130,6 +130,12 @@ class Config:
     brand_credit: str = BRAND_CREDIT_DEFAULT
     brand_photo: Path | None = BRAND_PHOTO_DEFAULT
     send_brand_photo: bool = True
+    #: Require users to join the configured channels before the bot responds.
+    force_join_enabled: bool = True
+    #: How long a membership result is trusted (protects the Bot API rate limit).
+    membership_cache_seconds: int = 300
+    #: Optional deploy-time seed for the channel list (admins can also manage it).
+    required_channels_seed: tuple[str, ...] = ()
 
     # ---------------------------------------------------------------- helpers
     @property
@@ -219,12 +225,16 @@ class Config:
         gen_per_hour = _get_int(
             env, "GENERATE_PER_HOUR", problems, required=False, default=20
         )
+        membership_ttl = _get_int(
+            env, "MEMBERSHIP_CACHE_SECONDS", problems, required=False, default=300
+        )
         for name, value in (
             ("MESSAGE_TTL_SECONDS", ttl),
             ("POLL_INTERVAL_SECONDS", poll_interval),
             ("INITIAL_LOOKBACK_DAYS", lookback),
             ("MAX_ALIASES_PER_USER", max_aliases),
             ("GENERATE_PER_HOUR", gen_per_hour),
+            ("MEMBERSHIP_CACHE_SECONDS", membership_ttl),
         ):
             if value is not None and value <= 0:
                 problems.append(f"{name} must be > 0, got {value}")
@@ -288,6 +298,15 @@ class Config:
             send_brand_photo=str(
                 env.get("SEND_BRAND_PHOTO", "true")
             ).lower() in {"1", "true", "yes", "on"},
+            force_join_enabled=str(
+                env.get("FORCE_JOIN", "true")
+            ).lower() in {"1", "true", "yes", "on"},
+            membership_cache_seconds=membership_ttl or 300,
+            required_channels_seed=tuple(
+                item.strip()
+                for item in str(env.get("REQUIRED_CHANNELS", "")).split(",")
+                if item.strip()
+            ),
         )
 
 

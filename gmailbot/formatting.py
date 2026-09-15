@@ -22,6 +22,13 @@ import re
 from typing import Iterable, Sequence
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import KeyboardButtonStyle
+
+#: Button colours. Clients released before 9 Feb 2026 ignore `style` and draw
+#: their default colour, so the emoji in each label stays meaningful on its own.
+STYLE_PRIMARY = KeyboardButtonStyle.PRIMARY  # blue
+STYLE_SUCCESS = KeyboardButtonStyle.SUCCESS  # green
+STYLE_DANGER = KeyboardButtonStyle.DANGER    # red
 
 from . import callbacks as cb
 from .models import Alias, Message
@@ -424,6 +431,99 @@ def feedback_prompt() -> str:
         "Your Telegram name and user id are attached so replies are possible.\n"
         "Send /cancel to leave feedback mode."
     )
+
+
+# ------------------------------------------------------------------ force join
+def join_required(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
+    """The gate screen: one link button per channel, plus a verify button."""
+    lines = ["🔒 <b>Join required</b>", "", "Join to use this bot:"]
+    rows: list[list[InlineKeyboardButton]] = []
+    for channel in channels:
+        lines.append(f"• <b>{esc(channel.display)}</b>")
+        if channel.invite_link:
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        f"➡️ Join {clip(channel.display, 26)}",
+                        url=channel.invite_link,
+                        style=STYLE_PRIMARY,
+                    )
+                ]
+            )
+    lines += ["", "Then tap <b>I've joined</b> below."]
+    rows.append(
+        [InlineKeyboardButton("✅ I've joined", callback_data=cb.JOIN_VERIFY, style=STYLE_SUCCESS)]
+    )
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+# ----------------------------------------------------------------- admin panel
+def admin_panel(channels: Sequence, *, stats: dict[str, int] | None = None) -> tuple[str, InlineKeyboardMarkup]:
+    lines = ["🛠 <b>Admin panel</b>", "", "Use the buttons below."]
+    if stats:
+        lines = [
+            "🛠 <b>Admin panel</b>",
+            "",
+            f"👥 Users: {stats.get('users', 0)} ({stats.get('banned', 0)} banned)",
+            f"📧 Aliases: {stats.get('aliases', 0)} ({stats.get('active_aliases', 0)} active)",
+            f"✉️ Messages: {stats.get('messages', 0)}",
+            f"📣 Required channels: {len(channels)}",
+        ]
+    rows: list[list[InlineKeyboardButton]] = [
+        [
+            InlineKeyboardButton("📊 Stats", callback_data=cb.ADMIN_STATS, style=STYLE_PRIMARY),
+            InlineKeyboardButton("📣 Broadcast", callback_data=cb.ADMIN_BROADCAST, style=STYLE_PRIMARY),
+        ],
+        [
+            InlineKeyboardButton("🚫 Ban", callback_data=cb.ADMIN_BAN, style=STYLE_DANGER),
+            InlineKeyboardButton("✅ Unban", callback_data=cb.ADMIN_UNBAN, style=STYLE_SUCCESS),
+        ],
+        [
+            InlineKeyboardButton("➕ Add channel", callback_data=cb.ADMIN_ADD_CHANNEL, style=STYLE_SUCCESS),
+            InlineKeyboardButton("➖ Remove channel", callback_data=cb.ADMIN_DEL_CHANNEL, style=STYLE_DANGER),
+        ],
+        [
+            InlineKeyboardButton("📋 Manage channels", callback_data=cb.ADMIN_CHANNELS, style=STYLE_PRIMARY),
+            InlineKeyboardButton("🔄 Refresh", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY),
+        ],
+        [InlineKeyboardButton("✖️ Close", callback_data=cb.ADMIN_CLOSE, style=STYLE_DANGER)],
+    ]
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def channels_admin(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
+    if not channels:
+        return (
+            "📣 <b>Required channels</b>\n\nNone yet — the bot is open to everyone.\n"
+            "Add one with ➕ Add channel.",
+            InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("➕ Add channel", callback_data=cb.ADMIN_ADD_CHANNEL, style=STYLE_SUCCESS)],
+                    [InlineKeyboardButton("⬅️ Back", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY)],
+                ]
+            ),
+        )
+    lines = ["📣 <b>Required channels</b>", ""]
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, channel in enumerate(channels, start=1):
+        link = f" — {esc(channel.invite_link)}" if channel.invite_link else ""
+        lines.append(f"{index}. <b>{esc(channel.display)}</b> <code>{esc(channel.chat_id)}</code>{link}")
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    f"🗑 Remove {clip(channel.display, 20)}",
+                    callback_data=cb.remove_channel(channel.chat_id),
+                    style=STYLE_DANGER,
+                )
+            ]
+        )
+    rows.append(
+        [
+            InlineKeyboardButton("➕ Add channel", callback_data=cb.ADMIN_ADD_CHANNEL, style=STYLE_SUCCESS),
+            InlineKeyboardButton("⬅️ Back", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY),
+        ]
+    )
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
 
 
 def error(message: str) -> str:

@@ -25,13 +25,15 @@ SCALE = 2.0
 
 #: (filename, snippet to scroll to). "__FIRST__" means the first chat card.
 SHOTS: list[tuple[str, str]] = [
-    ("01-start", "__FIRST__"),
+    # the welcome screen (the very first card is the join gate when one is required)
+    ("01-start", "Generate unlimited Gmail aliases"),
     ("02-alias-ready", "Alias ready"),
     ("03-otp-alert", "New code"),
     ("04-codes-list", "Recent codes"),
     ("05-messages", "message(s)"),
     ("06-feedback-channel", "Feedback ID"),
-    ("07-admin-stats", "Statistics"),
+    ("07-join-gate", "Join required"),
+    ("08-admin-panel", "Admin panel"),
 ]
 
 # Squeeze the desktop preview layout down to phone width for the screenshots.
