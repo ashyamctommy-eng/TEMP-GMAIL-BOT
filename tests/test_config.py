@@ -36,6 +36,22 @@ def test_gmail_app_password_shape_is_validated(tmp_path):
     assert "App Password" in str(excinfo.value)
 
 
+def test_spaced_app_password_is_accepted_and_normalised(env, tmp_path):
+    """Google displays it as 'abcd efgh ijkl mnop'; both paste styles must work."""
+    spaced = Config.from_env({**env, "GMAIL_APP_PASSWORD": "abcd efgh ijkl mnop"}, root=tmp_path)
+    plain = Config.from_env({**env, "GMAIL_APP_PASSWORD": "abcdefghijklmnop"}, root=tmp_path)
+    assert spaced.gmail_app_password == "abcdefghijklmnop"
+    assert spaced.gmail_app_password == plain.gmail_app_password
+
+
+def test_wrong_length_app_password_is_rejected_with_a_useful_message(env, tmp_path):
+    with pytest.raises(ConfigError) as excinfo:
+        Config.from_env({**env, "GMAIL_APP_PASSWORD": "abcd efgh ij"}, root=tmp_path)
+    message = str(excinfo.value)
+    # "abcd efgh ij" -> 10 non-space characters; the message must say so.
+    assert "10 non-space characters" in message
+
+
 def test_alias_root_and_domain_derive_from_the_mailbox(env, tmp_path):
     config = Config.from_env(env, root=tmp_path)
     assert config.alias_root == "owner"

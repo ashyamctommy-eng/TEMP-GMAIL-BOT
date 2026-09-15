@@ -56,6 +56,8 @@ def main() -> int:
     print(f"       GMAIL_EMAIL   : {config.gmail_email}")
     print(f"       alias pattern : {config.alias_address.replace('{alias}', '<alias>')}")
     print(f"       mailbox       : {config.imap_mailbox} (read-only)")
+    print(f"       app password  : {len(config.gmail_app_password)} characters, "
+          "whitespace stripped (value never printed)")
     print(f"       imap host     : {config.imap_host}:993")
 
     try:

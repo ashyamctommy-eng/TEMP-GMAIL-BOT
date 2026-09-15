@@ -49,8 +49,19 @@ Google will ask you to re-enter your password.
    abcd efgh ijkl mnop
    ```
 
-   **Copy it now** — it is displayed only once. Spaces do not matter; the bot
-   strips them. If you lose it, just create another one (they are unlimited).
+   **Copy it now** — it is displayed only once. If you lose it, just create
+   another one (they are unlimited).
+
+   **Paste it exactly as shown, spaces and all** — that is fine:
+
+   ```ini
+   GMAIL_APP_PASSWORD=abcd efgh ijkl mnop
+   ```
+
+   The bot removes whitespace before using it, so `abcd efgh ijkl mnop` and
+   `abcdefghijklmnop` are identical to it. (If you also put this password into
+   some *other* tool that does not normalise — an SMTP script, a mail client —
+   strip the spaces there.)
 
 This is *not* your Google password, and it cannot be used to sign in to Gmail's
 website. It only grants mail access to the app you named.
@@ -71,10 +82,19 @@ git-ignored — never commit it.
 The App Password lets you log in; **IMAP has to be switched on as well**, or the
 login succeeds and the mailbox looks empty.
 
-1. Open Gmail → ⚙️ **Settings** → **See all settings**
-2. Tab **Forwarding and POP/IMAP**
-3. Section **IMAP access** → **Enable IMAP**
-4. **Save Changes**
+Do this in a **desktop browser** — the Gmail phone app has no such setting, and
+if you open Gmail in a mobile browser, switch to "Desktop site" first.
+
+* **Fastest:** open <https://mail.google.com/mail/u/0/#settings/fwdandpop> — that
+  jumps straight to the tab you need.
+* Or by hand: Gmail → ⚙️ gear icon (top right) → **See all settings** → tab
+  **Forwarding and POP/IMAP** → section **IMAP access** → select **Enable IMAP**
+  → scroll down → **Save Changes**.
+
+It takes effect immediately; no restart of Gmail is needed. If the IMAP options
+are greyed out, your Workspace admin has disabled them:
+`admin.google.com` → **Apps → Google Workspace → Gmail → End User Access →
+POP and IMAP access** → allow IMAP for your organisation.
 
 ## Step 7 — Verify before you deploy
 

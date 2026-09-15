@@ -176,10 +176,17 @@ class Config:
 
         gmail_email = _get(env, "GMAIL_EMAIL", problems)
         gmail_password = _get(env, "GMAIL_APP_PASSWORD", problems)
-        if gmail_password and len(gmail_password.replace(" ", "")) != 16:
+        if gmail_password:
+            # Google shows App Passwords as four groups of four ("abcd efgh ijkl
+            # mnop"). Pasting them verbatim is the normal case, so normalise here
+            # and send the bare 16 characters to IMAP: validation *and* use must
+            # agree, otherwise a correct pasted password is rejected at login.
+            gmail_password = re.sub(r"\s+", "", gmail_password)
+        if gmail_password and len(gmail_password) != 16:
             problems.append(
                 "GMAIL_APP_PASSWORD should be a 16-character Google App Password "
-                "(not your account password)"
+                "(not your account password). Spaces are fine; it has "
+                f"{len(gmail_password)} non-space characters."
             )
 
         admin_id = _get_int(env, "ADMIN_USER_ID", problems)
