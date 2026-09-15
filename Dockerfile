@@ -1,5 +1,10 @@
-# Optional: Railway/Nixpacks works without this, but a Dockerfile pins the
-# runtime exactly and works on any container host (Fly, Render, VPS, k8s).
+# Container image for the bot.
+#
+# Railway also builds this file (a Dockerfile takes precedence over Nixpacks).
+# It deliberately does NOT declare VOLUME: Railway rejects that instruction
+# ("docker VOLUME at Line 20 is not supported, use Railway Volumes") because the
+# platform attaches volumes itself. Mount your volume at /data in the Railway UI
+# instead — DB_PATH and LOG_PATH below already point there.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -15,8 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# SQLite lives on a volume so aliases and messages survive a redeploy.
+# The mount point for the volume (created, but not declared as VOLUME).
 RUN mkdir -p /data
-VOLUME ["/data"]
 
 CMD ["python", "run.py"]
