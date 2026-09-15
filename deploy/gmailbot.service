@@ -1,0 +1,33 @@
+[Unit]
+Description=TempGail Gmail alias / OTP Telegram bot
+Documentation=file:///opt/gmailbot/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Run as an unprivileged user that can read/write the data directory.
+User=gmailbot
+Group=gmailbot
+WorkingDirectory=/opt/gmailbot
+# Paths are resolved against this directory, so the bot can be started from anywhere.
+EnvironmentFile=/opt/gmailbot/.env
+ExecStart=/opt/gmailbot/.venv/bin/python /opt/gmailbot/run.py
+Restart=always
+RestartSec=5
+# The process handles SIGTERM (stops the IMAP poller, closes the DB) before exiting.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gmailbot
+
+# Hardening: the bot only needs the network and its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/gmailbot/data
+
+[Install]
+WantedBy=multi-user.target

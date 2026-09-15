@@ -1,0 +1,425 @@
+"""Message rendering: one place that builds every screen.
+
+The original inlined the same OTP listing twice (``/otp`` and the ``view_otp``
+callback) and the same alias-message listing twice (``/view`` and ``view_<alias>``),
+so the two copies had already drifted. It also interpolated raw email subjects
+and bodies into Markdown, which is why every send had a ``try/except`` that
+re-sent the same text without ``parse_mode`` -- and why "Copy Link" handed users
+truncated URLs.
+
+Rules here:
+
+* user-derived text is always HTML-escaped,
+* links are rendered with the **full** URL in ``href`` and a short *label*,
+* OTPs go in ``<code>`` so clients offer tap-to-copy,
+* output is clamped to Telegram's 4096-character limit with balanced tags.
+"""
+
+from __future__ import annotations
+
+import html
+import re
+from typing import Iterable, Sequence
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+from . import callbacks as cb
+from .models import Alias, Message
+TELEGRAM_TEXT_LIMIT = 4096
+BODY_PREVIEW_CHARS = 220
+SUBJECT_PREVIEW_CHARS = 90
+MESSAGES_PER_PAGE = 5
+OTP_ENTRIES_PER_PAGE = 5
+
+_ALLOWED_TAGS = {"b", "i", "u", "s", "code", "pre", "a", "blockquote", "span"}
+_TAG_RE = re.compile(r"<(/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s[^>]*)?)>")
+
+
+def esc(value: object) -> str:
+    """Escape for ``parse_mode=HTML``."""
+    return html.escape("" if value is None else str(value), quote=False)
+
+
+def esc_attr(value: object) -> str:
+    return html.escape("" if value is None else str(value), quote=True)
+
+
+def code(value: object) -> str:
+    return f"<code>{esc(value)}</code>"
+
+
+def pre(value: object) -> str:
+    return f"<pre>{esc(value)}</pre>"
+
+
+def balance_html(text: str) -> str:
+    """Close any tags left open (used after clamping)."""
+    stack: list[str] = []
+    for match in _TAG_RE.finditer(text):
+        closing, tag, attrs = match.group(1), match.group(2).lower(), match.group(3)
+        if tag not in _ALLOWED_TAGS or attrs.rstrip().endswith("/"):
+            continue
+        if closing:
+            if tag in stack:
+                while stack and stack.pop() != tag:
+                    pass
+        else:
+            stack.append(tag)
+    return text + "".join(f"</{tag}>" for tag in reversed(stack))
+
+
+def clamp(text: str, limit: int = TELEGRAM_TEXT_LIMIT) -> str:
+    """Truncate to ``limit`` characters *after* closing the tags we cut through.
+
+    The closing tags are part of the budget, otherwise a heavily tagged message
+    ends up over the limit again and Telegram rejects it outright.
+    """
+    if len(text) <= limit:
+        return text
+    budget = limit
+    balanced = text
+    for _ in range(6):
+        cut = balanced[: budget - 1] if len(balanced) >= budget else balanced
+        # Never cut inside a tag.
+        if cut.rfind("<") > cut.rfind(">"):
+            cut = cut[: cut.rfind("<")]
+        body = cut.rstrip() + "…"
+        balanced = balance_html(body)
+        if len(balanced) <= limit:
+            return balanced
+        budget = limit - (len(balanced) - len(body))
+    return balanced[:limit]  # pragma: no cover - only for pathological input
+
+
+def clip(value: str, limit: int) -> str:
+    text = " ".join((value or "").split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def yes_no(value: bool) -> str:
+    return "✅ active" if value else "⛔ deleted"
+
+
+def duration(seconds: int) -> str:
+    if seconds % 3600 == 0:
+        hours = seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''}"
+    if seconds % 60 == 0:
+        minutes = seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''}"
+    return f"{seconds} seconds"
+
+
+# --------------------------------------------------------------------- keyboards
+def menu_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN)],
+            [
+                InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+                InlineKeyboardButton("📋 My aliases", callback_data=cb.HISTORY),
+            ],
+            [InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)],
+        ]
+    )
+
+
+def pager_row(prefix_alias: str, page: int, has_more: bool) -> list[InlineKeyboardButton]:
+    row: list[InlineKeyboardButton] = []
+    if page > 0:
+        row.append(
+            InlineKeyboardButton(
+                "⬅️ Newer", callback_data=cb.view_alias(prefix_alias, page - 1)
+            )
+        )
+    if has_more:
+        row.append(
+            InlineKeyboardButton(
+                "Older ➡️", callback_data=cb.view_alias(prefix_alias, page + 1)
+            )
+        )
+    return row
+
+
+# ---------------------------------------------------------------------- screens
+def welcome(config, *, max_aliases: int) -> str:
+    return (
+        "🤖 <b>TempGail</b>\n\n"
+        f"Generate unlimited Gmail aliases on <code>{esc(config.alias_address)}</code> "
+        "and receive the mail (and OTP codes) right here.\n\n"
+        "<b>Commands</b>\n"
+        "/generate – new random alias\n"
+        "/generate &lt;name&gt; – pick your own\n"
+        "/history – your aliases\n"
+        "/view &lt;alias&gt; – messages for one alias\n"
+        "/otp – recent codes and verification links\n"
+        "/delete &lt;alias&gt; – stop showing an alias\n"
+        "/feedback – tell the admin something\n\n"
+        f"Messages are kept for {esc(duration(config.message_ttl_seconds))} and then "
+        f"deleted automatically. Up to {max_aliases} aliases per account.\n\n"
+        "Tap <b>New alias</b> to get started."
+    )
+
+
+def alias_created(config, alias: str, label: str) -> tuple[str, InlineKeyboardMarkup]:
+    text = (
+        "✅ <b>Alias ready</b>\n\n"
+        f"{code(config.full_alias(alias))}\n\n"
+        f"Style: <b>{esc(label)}</b>\n"
+        "• Give this address to the site you're signing up for\n"
+        "• Mail arrives here automatically\n"
+        "• OTP codes and verification links are detected for you\n"
+        f"• Codes are deleted after {esc(duration(config.message_ttl_seconds))}"
+    )
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("👀 Messages", callback_data=cb.view_alias(alias))],
+            [
+                InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+                InlineKeyboardButton("🎲 Another", callback_data=cb.GEN),
+            ],
+            [InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)],
+        ]
+    )
+    return text, keyboard
+
+
+def alias_list(config, aliases: Sequence[Alias]) -> tuple[str, InlineKeyboardMarkup]:
+    if not aliases:
+        return (
+            "📭 You have no aliases yet.\n\nCreate one with /generate.",
+            menu_keyboard(),
+        )
+    lines = ["📋 <b>Your aliases</b>\n"]
+    rows: list[list[InlineKeyboardButton]] = []
+    for alias in aliases:
+        lines.append(
+            f"{'✅' if alias.active else '⛔'} {code(config.full_alias(alias.name))}"
+        )
+        if alias.active:
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        f"👀 {alias.name[:18]}", callback_data=cb.view_alias(alias.name)
+                    ),
+                    InlineKeyboardButton("🗑", callback_data=cb.delete_alias(alias.name)),
+                ]
+            )
+        else:
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        f"♻️ Restore {alias.name[:16]}",
+                        callback_data=cb.restore_alias(alias.name),
+                    )
+                ]
+            )
+    rows.append(
+        [
+            InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN),
+            InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+        ]
+    )
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def _entry_header(message: Message) -> str:
+    return (
+        f"📨 <b>{esc(clip(message.subject, SUBJECT_PREVIEW_CHARS))}</b> "
+        f"<i>{esc(message.received_display)}</i>"
+    )
+
+
+def _entry_body(message: Message) -> list[str]:
+    lines: list[str] = []
+    if message.otp:
+        lines.append(f"🔑 OTP: {code(message.otp)}")
+    if message.links:
+        first = message.links[0]
+        host = esc(_host_of(first))
+        lines.append(f'🔗 <a href="{esc_attr(first)}">{host}</a>')
+        if len(message.links) > 1:
+            lines.append(f"<i>+{len(message.links) - 1} more link(s)</i>")
+    if message.body:
+        lines.append(pre(clip(message.body, BODY_PREVIEW_CHARS)))
+    return lines
+
+
+def _host_of(url: str) -> str:
+    without_scheme = url.split("://", 1)[-1]
+    return without_scheme.split("/", 1)[0]
+
+
+def _secret_buttons(messages: Sequence[Message]) -> list[list[InlineKeyboardButton]]:
+    rows: list[list[InlineKeyboardButton]] = []
+    for message in messages:
+        row: list[InlineKeyboardButton] = []
+        if message.links:
+            row.append(
+                InlineKeyboardButton(
+                    "🔗 Full link", callback_data=cb.reveal_secret(message.id, "link")
+                )
+            )
+        if row:
+            rows.append(row)
+    return rows
+
+
+def otp_digest(
+    messages: Sequence[Message], *, page: int = 0, total: int | None = None
+) -> tuple[str, InlineKeyboardMarkup]:
+    """Recent codes / links, newest first, paginated."""
+    if not messages:
+        return (
+            "📭 No OTP codes or verification links in the last "
+            "batch of messages.\n\nThey are deleted automatically after the TTL.",
+            menu_keyboard(),
+        )
+    start = page * OTP_ENTRIES_PER_PAGE
+    window = list(messages[start : start + OTP_ENTRIES_PER_PAGE])
+    total = len(messages) if total is None else total
+    lines = ["🔑 <b>Recent codes</b>\n"]
+    for message in window:
+        lines.append(_entry_header(message))
+        lines.append(f"👤 {esc(message.alias)}")
+        lines.extend(_entry_body(message))
+        lines.append("")
+    rows = _secret_buttons(window)
+    pager = []
+    if page > 0:
+        pager.append(InlineKeyboardButton("⬅️ Newer", callback_data=cb.otp_page(page - 1)))
+    if start + OTP_ENTRIES_PER_PAGE < total:
+        pager.append(InlineKeyboardButton("Older ➡️", callback_data=cb.otp_page(page + 1)))
+    if pager:
+        rows.append(pager)
+    rows.append([InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)])
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def alias_messages(
+    alias: str,
+    messages: Sequence[Message],
+    *,
+    page: int = 0,
+    total: int | None = None,
+) -> tuple[str, InlineKeyboardMarkup]:
+    total = len(messages) if total is None else total
+    if not messages:
+        text = (
+            f"📭 No messages for {code(alias)} yet.\n\n"
+            "New mail shows up here automatically — tap refresh in a moment."
+        )
+        keyboard = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("🔄 Refresh", callback_data=cb.view_alias(alias))],
+                [
+                    InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+                    InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN),
+                ],
+            ]
+        )
+        return text, keyboard
+
+    lines = [f"📧 <b>{esc(alias)}</b> — {total} message(s)\n"]
+    for message in messages:
+        lines.append(_entry_header(message))
+        if message.sender:
+            lines.append(f"👤 <i>{esc(clip(message.sender, 60))}</i>")
+        lines.extend(_entry_body(message))
+        lines.append("")
+    rows = _secret_buttons(messages)
+    has_more = (page + 1) * MESSAGES_PER_PAGE < total
+    pager = pager_row(alias, page, has_more)
+    if pager:
+        rows.append(pager)
+    rows.append(
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data=cb.view_alias(alias, page)),
+            InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+        ]
+    )
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def secret_reveal(label: str, value: str, action_hint: str) -> str:
+    return f"{label}\n{code(value)}\n\n<i>{esc(action_hint)}</i>"
+
+
+def feedback_prompt() -> str:
+    return (
+        "💬 <b>Feedback</b>\n\n"
+        "Send any message — or a photo with a caption — and the admin will see it.\n\n"
+        "Your Telegram name and user id are attached so replies are possible.\n"
+        "Send /cancel to leave feedback mode."
+    )
+
+
+def error(message: str) -> str:
+    return f"❌ {esc(message)}"
+
+
+def notice(message: str) -> str:
+    return f"ℹ️ {esc(message)}"
+
+
+def otp_notification(config, message: Message) -> tuple[str, InlineKeyboardMarkup]:
+    """Heads-up sent when new mail with a code arrives."""
+    lines = ["🔔 <b>New code</b>\n", _entry_header(message)]
+    lines.append(f"👤 {esc(message.alias)}")
+    lines.extend(_entry_body(message))
+    rows: list[list[InlineKeyboardButton]] = []
+    if message.links:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    "🔗 Full link", callback_data=cb.reveal_secret(message.id, "link")
+                )
+            ]
+        )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                "👀 View messages", callback_data=cb.view_alias(message.alias)
+            ),
+            InlineKeyboardButton("🔑 All OTPs", callback_data=cb.OTP_LIST),
+        ]
+    )
+    lines.append(f"\n⏰ Kept for {duration(config.message_ttl_seconds)}.")
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def mail_notification(config, message: Message) -> tuple[str, InlineKeyboardMarkup]:
+    text = (
+        "📧 <b>New email</b>\n\n"
+        f"👤 {esc(message.alias)}\n"
+        f"📨 {esc(clip(message.subject, SUBJECT_PREVIEW_CHARS))}\n"
+        f"🕒 {esc(message.received_display)}"
+    )
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "👀 Read it", callback_data=cb.view_alias(message.alias)
+                )
+            ]
+        ]
+    )
+    return text, keyboard
+
+
+def feedback_forward(
+    *, header_lines: Iterable[str], feedback_id: int, body: str, escaped_body: bool = False
+) -> str:
+    """Body text forwarded to the admin channel.
+
+    ``escaped_body`` must be True when the caller already escaped it, so we never
+    double-escape; user text is *always* escaped at least once, which is what
+    stops a user from forging the identity header above.
+    """
+    header = "\n".join(header_lines)
+    payload = body if escaped_body else esc(body)
+    return (
+        f"{header}\n"
+        f"<b>Feedback ID:</b> {feedback_id}\n\n"
+        f"<blockquote>{payload}</blockquote>"
+    )

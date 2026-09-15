@@ -1,0 +1,11 @@
+# Runtime dependencies.
+python-telegram-bot==22.8
+requests>=2.31
+
+# Optional: only needed for the /feedback image helpers in the legacy code path.
+# The refactor no longer requires Pillow (it never generated images; the
+# original imported it just to send a throwaway test image to the admin channel).
+# pillow>=10.0
+
+# Development
+pytest>=8.0
