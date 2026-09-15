@@ -1,0 +1,6 @@
+-r requirements.txt
+
+# Test + lint tooling (not needed to run the bot).
+pytest>=8.0
+pyflakes>=3.2
+websocket-client>=1.7   # only for tools/cdp_shot.py screenshot helpers

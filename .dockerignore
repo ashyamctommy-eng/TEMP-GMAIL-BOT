@@ -1,0 +1,13 @@
+.git
+.gitignore
+data
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env
+__pycache__
+.pytest_cache
+preview/*.png
+preview/shots
+preview/preview.html

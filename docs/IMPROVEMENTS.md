@@ -2,7 +2,7 @@
 
 You asked what I'd do with autonomy. Short answer: **fix the silent data loss
 first, then the mail-loss logic, then delete the guesswork.** Everything below
-is already implemented, running, and pinned by tests in this repo (123 tests,
+is already implemented, running, and pinned by tests in this repo (143 tests,
 `python -m pytest`).
 
 I did not just read the file. I executed it against its own functions to check
@@ -325,7 +325,7 @@ those calls:
 ```bash
 cd projects/gmailbot
 pip install -r requirements.txt
-python -m pytest -q                        # 124 passed
+python -m pytest -q                        # 143 passed
 python -m pyflakes gmailbot tests run.py
 python evidence/reproduce_bug_report.py    # the BEFORE numbers, from your original file
 ```

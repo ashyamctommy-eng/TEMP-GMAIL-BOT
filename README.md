@@ -10,6 +10,38 @@ This is a refactor of a single 2,194-line `GmailBot.py`. The original still runs
 what changed and why is in **[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)**, and
 every fix is pinned by a test.
 
+## Screenshots
+
+<p align="center">
+  <img src="preview/shots/01-start.png" width="235" alt="Welcome screen with the brand photo">
+  <img src="preview/shots/02-alias-ready.png" width="235" alt="New alias created">
+  <img src="preview/shots/03-otp-alert.png" width="235" alt="OTP push alert">
+</p>
+<p align="center">
+  <em>Welcome + brand photo · a new alias · an OTP push alert (code, link and buttons)</em>
+</p>
+
+<p align="center">
+  <img src="preview/shots/04-codes-list.png" width="235" alt="Recent codes">
+  <img src="preview/shots/05-messages.png" width="235" alt="Messages for one alias">
+  <img src="preview/shots/06-feedback-channel.png" width="235" alt="Feedback delivered to the admin channel">
+</p>
+<p align="center">
+  <em>Recent codes · messages for an alias · feedback landing in the admin channel</em>
+</p>
+
+These are not mockups. They are rendered from the bot's own output: each string
+and inline keyboard was captured by driving the real handlers and poller through
+the test fakes, so what you see is what Telegram receives. The full session
+(11 screens, including admin `/stats`) is in
+**[preview/preview.png](preview/preview.png)** — regenerate any of it yourself:
+
+```bash
+python evidence/preview_session.py     # real code, fake transports -> preview/session.json
+python evidence/render_preview.py      # -> preview/preview.html
+python tools/cdp_phone_shots.py "file://$PWD/preview/preview.html" preview/shots
+```
+
 ```
 gmailbot/
   config.py      env + .env loading, validation, path resolution
@@ -24,15 +56,15 @@ gmailbot/
   callbacks.py   callback-data encoding (64-byte safe, parsed as untrusted)
   handlers.py    Telegram handlers, one send path
   app.py         wiring + graceful shutdown
-tests/           123 tests, no network, no token, no Gmail account
+tests/           143 tests, no network, no token, no Gmail account
 ```
 
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env          # then fill it in
-python -m pytest -q           # sanity check: 123 passed
+python -m pytest -q           # sanity check: 143 passed
 python run.py
 ```
 
@@ -50,21 +82,48 @@ You need:
 Missing or malformed configuration fails at startup with a list of exactly what
 to fix; the process never starts with placeholder secrets.
 
-## Deploying
+## Deployment
 
-This is a long-running process, not a web app. The original shipped a
-`handler(event)` function for Plesk that called `asyncio.run(...)` — as a request
-handler it would block a worker forever and never return.
+One long-running process — it holds a Telegram long-poll and an IMAP connection
+open, so it needs a **worker**, not a web request handler. Full guide, including
+the platform-by-platform reasoning: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
-* **systemd** — `deploy/gmailbot.service` (copy to `/etc/systemd/system/`,
-  adjust paths, `systemctl enable --now gmailbot`).
-* **Plesk** — create a Python app whose startup file is `run.py`, or use a
-  supervisor/cron-restart action that keeps the process alive.
-* **Docker/k8s** — same command; the process handles SIGTERM, stops the IMAP
-  poller and closes the database cleanly.
+| Platform | Works? |
+| --- | --- |
+| **Railway** | ✅ Recommended — worker + a `/data` volume |
+| **Any VPS** | ✅ Cheapest long-term; `deploy/gmailbot.service` included |
+| **Docker / Fly / Render worker / k8s** | ✅ `Dockerfile` included |
+| **Plesk** | ✅ as a persistent process, not a request handler |
+| **Shared cPanel (Hostnin Cloud/Web Hosting, etc.)** | ⚠️ No — see the guide |
+| **Serverless / Cloud Functions** | ❌ nothing keeps the loop alive |
 
-Logs go to `$LOG_PATH` (default `data/bot.log`, rotating at 5 MB × 3) and to
-stderr, which is what the container/service manager captures.
+### Railway in short
+
+1. **New Project → Deploy from GitHub repo** → `TEMP-GMAIL-BOT`. Nixpacks reads
+   `requirements.txt`; `railway.json` runs `python run.py`, `Procfile` covers
+   Heroku-style hosts, `.python-version` pins 3.11.
+2. **Variables** — the required set from `.env.example`, plus
+   `DB_PATH=/data/bot.db` and `LOG_PATH=/data/bot.log`.
+3. **Add a volume mounted at `/data`.** Skip this and every redeploy wipes the
+   database (aliases, stored codes).
+4. Keep **replicas = 1** — two copies polling one mailbox double-notify and keep
+   separate databases.
+5. It binds no port: ignore Railway's "no healthcheck / no public domain" hints.
+
+Logs should show `starting gmailbot (db=/data/bot.db)` → `database ready` →
+`gmail poller started` → `bot ready`, then `/start` in Telegram replies with the
+welcome card.
+
+### Docker in short
+
+```bash
+docker build -t tempgmailbot .
+docker run -d --name tempgmailbot --restart unless-stopped --env-file .env \
+  -e DB_PATH=/data/bot.db -v tempgmailbot-data:/data tempgmailbot
+```
+
+Logs go to `$LOG_PATH` (default `data/bot.log`, rotating 5 MB × 3) and stderr,
+which the platform captures.
 
 ## How it works
 
@@ -172,33 +231,10 @@ configured as `BOT_CREDIT`, not hardcoded.
   register there complies with that platform's terms, is your call — the bot
   only reads the mailbox you point it at.
 
-## Preview
-
-`preview/preview.png` is a rendered session — but not a mockup. It is produced by
-driving the real `BotHandlers` and `GmailPoller` against the fake Telegram/IMAP
-transports from `tests/`, capturing exactly what the bot emits, and rendering
-those strings in a Telegram-style layout:
-
-```bash
-python evidence/preview_session.py   # real code, fake transports -> preview/session.json
-python evidence/render_preview.py    # -> preview/preview.html
-python tools/cdp_shot.py "file://$PWD/preview/preview.html" preview/preview.png --width 1460
-```
-
-What it shows: onboarding, alias creation, four ingested emails (`/start`,
-`/generate`, push alerts, `/otp`, `/view`, `/history`), button presses, the
-"did you mean to create an alias?" confirmation for stray text, feedback
-delivery into the admin channel, and the admin's `/stats` + `/broadcast`.
-
-**Caveat:** this is the bot's real output over a simulated Gmail mailbox. It runs
-no HTTP calls and needs no bot token, so it proves the rendering and the logic —
-not that your Telegram account, channel ids and Gmail app password work. Only a
-live run does that.
-
 ## Tests
 
 ```bash
-python -m pytest -q                              # all tests
+python -m pytest -q                              # all tests (143)
 python -m pytest tests/test_db.py -q             # the concurrency regression
 python evidence/reproduce_bug_report.py          # BEFORE numbers, from the original file
 ```
