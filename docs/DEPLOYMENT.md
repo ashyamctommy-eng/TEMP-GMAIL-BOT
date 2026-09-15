@@ -8,7 +8,9 @@ open. So it needs a **worker**, not a web handler.
 1. The env vars from `.env.example` (`BOT_TOKEN`, `GMAIL_EMAIL`,
    `GMAIL_APP_PASSWORD`, `ADMIN_USER_ID`, `FEEDBACK_CHANNEL_ID`). Optional:
    `FORCE_JOIN` + `REQUIRED_CHANNELS` to make users join a channel first — you can
-   also add channels from inside Telegram with `/addchannel`.
+   also add channels from inside Telegram with `/addchannel`. Use `@username` or
+   `-100…` in `REQUIRED_CHANNELS`; the bot logs an error at boot if one cannot be
+   resolved (the gate fails open, so it would otherwise switch itself off).
 2. **1 replica** — two copies on one mailbox double-notify.
 3. A persistent path for `DB_PATH` / `LOG_PATH` (a volume in the cloud), or your
    aliases and codes are wiped on each deploy.

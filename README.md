@@ -93,7 +93,7 @@ Everything is env config — I never hardcode it.
 | `MAX_ALIASES_PER_USER` / `GENERATE_PER_HOUR` | `25` / `20` | per-user limits |
 | `IMAP_MAILBOX` | `INBOX` | set `[Gmail]/All Mail` if a filter archives alias mail |
 | `FORCE_JOIN` | `true` | require channel membership before the bot answers |
-| `REQUIRED_CHANNELS` | empty | seed list, e.g. `@nativecodes,@other` (then use `/addchannel`) |
+| `REQUIRED_CHANNELS` | empty | seed list, comma-separated: `@nativecodes,-1001234567890` (the `@` is optional; then manage with `/addchannel`) |
 | `MEMBERSHIP_CACHE_SECONDS` | `300` | how long a membership result is trusted |
 | `BOT_BRAND_NAME` | `𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕` | name in the welcome, description and captions |
 | `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …` on every message |

@@ -8,7 +8,7 @@ import pytest
 from telegram.ext import ApplicationHandlerStop
 
 from gmailbot import callbacks as cb
-from gmailbot.membership import MembershipGate
+from gmailbot.membership import MembershipGate, normalize_channel_ref
 from tests.fakes import FakeBot, FakeChat, FakeContext, FakeMessage, FakeQuery, FakeUpdate, FakeUser
 
 CHANNEL = "@nativecodes"
@@ -200,3 +200,52 @@ def test_resolve_rejects_unresolvable_and_non_channels(gate, bot):
 
 def test_resolve_rejects_empty_input(gate, bot):
     assert run(gate.resolve(bot, "   "))[0] is None
+
+
+# ------------------------------------------------- reference normalisation
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("@nativecodes", "@nativecodes"),
+        ("nativecodes", "@nativecodes"),          # the case that used to break
+        ("https://t.me/nativecodes", "@nativecodes"),
+        ("http://t.me/nativecodes", "@nativecodes"),
+        ("t.me/nativecodes", "@nativecodes"),
+        ("telegram.me/nativecodes", "@nativecodes"),
+        ("https://t.me/nativecodes/", "@nativecodes"),
+        ("  @nativecodes  ", "@nativecodes"),
+        ("-1001234567890", "-1001234567890"),
+        ("-1001234567890 ", "-1001234567890"),
+        ("", None),
+        ("   ", None),
+        ("https://t.me/+AbCdEf", None),           # invite link, not a reference
+        ("t.me/+AbCdEf", None),
+        ("has spaces", None),
+    ],
+)
+def test_channel_reference_normalisation(raw, expected):
+    assert normalize_channel_ref(raw) == expected
+
+
+def test_seeded_channels_are_normalised(config, db, tmp_path):
+    """REQUIRED_CHANNELS=@a,plain,https://t.me/c must not silently disable the gate."""
+    import dataclasses
+
+    from gmailbot.app import build_application
+    from gmailbot.config import Config
+
+    env = {
+        "BOT_TOKEN": "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw",
+        "GMAIL_EMAIL": "owner@gmail.com",
+        "GMAIL_APP_PASSWORD": "abcdefghijklmnop",
+        "ADMIN_USER_ID": "42",
+        "FEEDBACK_CHANNEL_ID": "-1001234567890",
+        "DB_PATH": str(tmp_path / "seed.db"),
+        "LOG_PATH": str(tmp_path / "seed.log"),
+        "REQUIRED_CHANNELS": "@first,second,https://t.me/third,-100999,-100888,bad ref",
+    }
+    seeded = Config.from_env(env, root=tmp_path)
+    application = build_application(seeded)
+    stored = [c.chat_id for c in application.bot_data["db"].list_required_channels()]
+    assert stored == ["@first", "@second", "@third", "-100999", "-100888"]
+    application.bot_data["db"].close()

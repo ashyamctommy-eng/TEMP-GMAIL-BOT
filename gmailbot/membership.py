@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
 
@@ -33,6 +34,40 @@ logger = logging.getLogger(__name__)
 
 #: A user counts as joined in any of these states.
 _MEMBER_STATES = {"creator", "administrator", "member", "restricted"}
+
+
+def normalize_channel_ref(raw: str) -> str | None:
+    """Accept every shape a human will type; return what the Bot API needs.
+
+    ``nativecodes``, ``@nativecodes``, ``https://t.me/nativecodes`` and
+    ``-1001234567890`` are all valid input. Telegram itself only understands
+    ``@username`` or a numeric id, so a bare handle would be unresolvable -- and
+    because the gate fails open, that would silently switch the check off.
+
+    Returns ``None`` for anything unusable (empty, an invite link like
+    ``t.me/+abc``, or junk).
+    """
+    value = (raw or "").strip()
+    if not value:
+        return None
+    lowered = value.lower()
+    for prefix in (
+        "https://t.me/", "http://t.me/", "t.me/",
+        "https://telegram.me/", "http://telegram.me/", "telegram.me/",
+    ):
+        if lowered.startswith(prefix):
+            value = value[len(prefix):]
+            break
+    value = value.strip("/").split("/")[0]
+    if not value or value.startswith("+"):
+        return None  # an invite link is not a usable chat reference
+    if value.startswith("@"):
+        value = value[1:]
+    if value.lstrip("-").isdigit():
+        return value
+    if re.fullmatch(r"[A-Za-z0-9_]{4,}", value):
+        return f"@{value}"
+    return None
 
 
 @dataclass

@@ -13,7 +13,7 @@ from .aliases import AliasGenerator
 from .config import Config, setup_logging
 from .db import Database
 from .handlers import BotHandlers, ChannelGuard, build_notification
-from .membership import MembershipGate
+from .membership import MembershipGate, normalize_channel_ref
 from .mail import GmailPoller
 from .notify import Notifier
 from .otp import OtpExtractor
@@ -90,12 +90,16 @@ def build_application(config: Config) -> Application:
         gate=gate,
     )
     # Deploy-time seed; /addchannel and /delchannel manage it at runtime after this.
-    for handle in config.required_channels_seed:
-        if db.list_required_channels() and handle in {
-            channel.chat_id for channel in db.list_required_channels()
-        }:
+    for raw in config.required_channels_seed:
+        ref = normalize_channel_ref(raw)
+        if ref is None:
+            logger.error(
+                "REQUIRED_CHANNELS: %r is not a channel handle or id — use "
+                "@username or -100... ; ignoring it",
+                raw,
+            )
             continue
-        db.add_required_channel(handle, handle, None, config.admin_user_id)
+        db.add_required_channel(ref, ref, None, config.admin_user_id)
 
     async def post_init(application: Application) -> None:
         # Everything a user sees before typing anything is registered here, so a
@@ -123,6 +127,27 @@ def build_application(config: Config) -> Application:
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning("could not set bot description: %s", exc)
+        # Resolve the required channels once at boot: fills in their titles and
+        # invite links, and shouts in the log if one cannot be read (the gate
+        # fails open, so a silent misconfiguration would disable it entirely).
+        for channel in db.list_required_channels():
+            try:
+                chat = await application.bot.get_chat(channel.chat_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.error(
+                    "required channel %s cannot be resolved (%s) — users will NOT be "
+                    "gated until this is fixed",
+                    channel.chat_id,
+                    exc,
+                )
+                continue
+            link = chat.invite_link or (
+                f"https://t.me/{chat.username}" if chat.username else channel.invite_link
+            )
+            db.add_required_channel(
+                channel.chat_id, chat.title or channel.title, link, config.admin_user_id
+            )
+
         notifier.bind(asyncio.get_running_loop(), application)
         notifier.start()
         poller.start()
