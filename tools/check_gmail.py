@@ -44,8 +44,42 @@ def env_or_dotenv() -> dict[str, str]:
     return {**values, **os.environ}
 
 
+#: The checker only exercises the IMAP path, so the Telegram-only values do not
+#: need to be set for it to be useful.
+PLACEHOLDERS = {
+    "BOT_TOKEN": "111111:" + "A" * 33,
+    "ADMIN_USER_ID": "1",
+    "FEEDBACK_CHANNEL_ID": "-1",
+}
+
+
+def prompt_for_gmail(env: dict[str, str]) -> tuple[dict[str, str], bool]:
+    """Ask for anything Gmail-related that is missing, hiding the password."""
+    if not sys.stdin.isatty():
+        return env, False
+    prompted = False
+    if not env.get("GMAIL_EMAIL"):
+        env["GMAIL_EMAIL"] = input("GMAIL_EMAIL (the mailbox the bot reads): ").strip()
+        prompted = True
+    if not env.get("GMAIL_APP_PASSWORD"):
+        import getpass
+
+        print(
+            "GMAIL_APP_PASSWORD: paste the 16 characters from "
+            "https://myaccount.google.com/apppasswords"
+        )
+        env["GMAIL_APP_PASSWORD"] = getpass.getpass("  (input hidden): ").strip()
+        prompted = True
+    return env, prompted
+
+
 def main() -> int:
-    env = env_or_dotenv()
+    env = dict(env_or_dotenv())
+    interactive = False
+    if not env.get("GMAIL_APP_PASSWORD") or not env.get("GMAIL_EMAIL"):
+        env, interactive = prompt_for_gmail(env)
+    for key, value in PLACEHOLDERS.items():
+        env.setdefault(key, value)
     try:
         config = Config.from_env(env, root=ROOT)
     except ConfigError as exc:
@@ -80,12 +114,15 @@ def main() -> int:
     status, data = client.select(config.imap_mailbox, readonly=True)
     if status != "OK":
         print(f"[{BAD}] login worked, but cannot open {config.imap_mailbox!r}: {data}")
-        print("       This is almost always IMAP being switched off in Gmail.")
-        print("       Gmail -> gear icon -> See all settings -> Forwarding and POP/IMAP")
-        print("         -> 'IMAP access' -> the Status line at the TOP of that section")
-        print("         -> select 'Enable IMAP' -> scroll down -> Save Changes")
-        print("       Direct link: https://mail.google.com/mail/u/0/#settings/fwdandpop")
-        print("       POP is unrelated; leave it disabled.")
+        print("       The password is fine, so this is about the mailbox itself:")
+        print(f"       1. Is {config.imap_mailbox!r} the right folder name? Gmail uses")
+        print("          'INBOX' and '[Gmail]/All Mail' (set IMAP_MAILBOX to change it).")
+        print("       2. On a Workspace/school account, IMAP may be blocked by the")
+        print("          admin (admin.google.com -> Apps -> Google Workspace -> Gmail")
+        print("          -> End User Access -> POP and IMAP access).")
+        print("       3. On a personal Google account there is NO IMAP on/off switch")
+        print("          any more: Google removed it in January 2025 and always leaves")
+        print("          IMAP on, so nothing needs enabling in Gmail settings.")
         return 1
     total = int(data[0]) if data and data[0].isdigit() else 0
     print(f"[{OK}] mailbox opened (read-only) -- {total} message(s)")
@@ -128,6 +165,8 @@ def main() -> int:
 
     client.logout()
     print(f"\n[{OK}] all good -- start the bot with: python run.py")
+    if interactive:
+        print("       (Ran with Gmail credentials only; Telegram settings were stubbed.)")
     return 0
 
 

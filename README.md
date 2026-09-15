@@ -80,8 +80,9 @@ You need:
    troubleshooting table: **[docs/GMAIL_SETUP.md](docs/GMAIL_SETUP.md)**. Short
    version: turn on **2-Step Verification** (App Passwords do not exist without
    it) → create an App Password at <https://myaccount.google.com/apppasswords> →
-   put the 16 characters in `GMAIL_APP_PASSWORD` → enable **IMAP** in Gmail
-   settings. Then verify it before deploying:
+   put the 16 characters in `GMAIL_APP_PASSWORD`. There is **no IMAP switch to
+   find**: Google removed it in January 2025 and always leaves IMAP on for
+   personal accounts. Then verify it before deploying:
 
    ```bash
    python tools/check_gmail.py

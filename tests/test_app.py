@@ -98,6 +98,14 @@ def test_brand_can_be_overridden_without_touching_code(env, tmp_path):
     assert custom.credit_line == "Bot by: someone"
 
 
+def test_checker_placeholders_are_valid_config(env, tmp_path):
+    """tools/check_gmail.py stubs Telegram settings so it can run Gmail-only."""
+    from gmailbot.config import Config
+    from tools.check_gmail import PLACEHOLDERS
+
+    Config.from_env({**env, **PLACEHOLDERS}, root=tmp_path)  # must not raise
+
+
 def test_limits_are_measured_in_utf16_units():
     """Styled fonts and emoji cost two UTF-16 units each, as Telegram counts them."""
     styled = "𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕"

@@ -77,24 +77,34 @@ The bot validates this at startup and refuses to run with a placeholder, so a
 typo surfaces immediately instead of as a mysterious login failure. `.env` is
 git-ignored — never commit it.
 
-## Step 6 — Enable IMAP in Gmail
+## Step 6 — IMAP: usually nothing to do
 
-The App Password lets you log in; **IMAP has to be switched on as well**, or the
-login succeeds and the mailbox looks empty.
+**Personal Google accounts: there is no IMAP on/off switch any more.** Google
+removed it in **January 2025** and always leaves IMAP enabled. If you go looking
+for "Enable IMAP" under *Forwarding and POP/IMAP*, you will not find it — the
+section only shows behaviour options (Auto-Expunge, folder-size limits), which is
+correct:
 
-Do this in a **desktop browser** — the Gmail phone app has no such setting, and
-if you open Gmail in a mobile browser, switch to "Desktop site" first.
+```
+IMAP access:
+  When I mark a message in IMAP as deleted:   ( ) Auto-Expunge on  (•) Auto-Expunge off
+  Folder size limits:                          (•) Do not limit ...
+```
 
-* **Fastest:** open <https://mail.google.com/mail/u/0/#settings/fwdandpop> — that
-  jumps straight to the tab you need.
-* Or by hand: Gmail → ⚙️ gear icon (top right) → **See all settings** → tab
-  **Forwarding and POP/IMAP** → section **IMAP access** → select **Enable IMAP**
-  → scroll down → **Save Changes**.
+Neither of those options turns IMAP on or off, and **you do not need to change
+them** — this bot opens the mailbox read-only and never sets flags or deletes
+anything, so Auto-Expunge has no effect on it.
 
-It takes effect immediately; no restart of Gmail is needed. If the IMAP options
-are greyed out, your Workspace admin has disabled them:
+(The old instructions you may find online — "gear icon → See all settings →
+Forwarding and POP/IMAP → Enable IMAP" — describe how Gmail looked before that
+change.)
+
+**Workspace / school accounts:** the organisation can still block IMAP. If the
+login works but the mailbox will not open, ask your admin to allow it:
 `admin.google.com` → **Apps → Google Workspace → Gmail → End User Access →
-POP and IMAP access** → allow IMAP for your organisation.
+POP and IMAP access**.
+
+**POP is unrelated** — leave it disabled. This bot only uses IMAP.
 
 ## Step 7 — Verify before you deploy
 
