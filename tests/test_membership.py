@@ -229,8 +229,6 @@ def test_channel_reference_normalisation(raw, expected):
 
 def test_seeded_channels_are_normalised(config, db, tmp_path):
     """REQUIRED_CHANNELS=@a,plain,https://t.me/c must not silently disable the gate."""
-    import dataclasses
-
     from gmailbot.app import build_application
     from gmailbot.config import Config
 
