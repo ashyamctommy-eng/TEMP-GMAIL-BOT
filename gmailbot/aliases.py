@@ -28,8 +28,12 @@ MAX_LENGTH = 30
 
 #: Words that would collide with commands or with callback-data routing.
 RESERVED = {
+    # full command names
     "otp", "start", "help", "generate", "history", "view", "delete", "feedback",
-    "cancel", "ban", "unban", "broadcast", "stats", "admin", "new", "menu",
+    "cancel", "ban", "unban", "broadcast", "stats", "admin", "channels",
+    "addchannel", "delchannel", "trackers", "new", "menu",
+    # short command names
+    "gen", "del", "f", "h", "v", "o", "c", "s",
     "postmaster", "abuse", "mailer-daemon", "no-reply", "noreply",
 }
 

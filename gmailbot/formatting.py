@@ -75,6 +75,52 @@ def _fit(text: str, budget: int) -> str:
     return text[:low]
 
 
+#: Mathematical Bold Italic (U+1D468 capitals, U+1D482 small) plus Mathematical
+#: Bold digits, since that block has no bold-italic digits. Derived, not copied:
+#: style("Temp Gmail Bot") reproduces the brand string byte for byte.
+_BOLD_ITALIC = {
+    **{chr(ord("A") + i): chr(0x1D468 + i) for i in range(26)},
+    **{chr(ord("a") + i): chr(0x1D482 + i) for i in range(26)},
+    **{str(i): chr(0x1D7CE + i) for i in range(10)},
+}
+
+
+#: Set from config at startup. Some clients render these characters as boxes, so
+#: the whole brand font can be switched off with one environment variable.
+_STYLED_FONT = True
+
+
+def configure(*, styled_font: bool = True) -> None:
+    global _STYLED_FONT
+    _STYLED_FONT = styled_font
+
+
+def style(text: object) -> str:
+    """Render bot-authored text in the brand font.
+
+    Applied to the bot's own chrome -- headings and button labels. Never applied
+    to data: codes, aliases, subjects, sender names, timestamps and above all
+    URLs, which have to stay copyable and clickable.
+    """
+    if not _STYLED_FONT:
+        return str(text)
+    return "".join(_BOLD_ITALIC.get(character, character) for character in str(text))
+
+
+S = style
+
+
+def unstyle(text: object) -> str:
+    """Inverse of :func:`style` -- back to plain ASCII.
+
+    Used by tests and by anything that needs to compare or search bot text
+    without the decorative font; it also documents that the mapping is a
+    bijection (see the round-trip test).
+    """
+    reverse = {styled: plain for plain, styled in _BOLD_ITALIC.items()}
+    return "".join(reverse.get(character, character) for character in str(text))
+
+
 def esc(value: object) -> str:
     """Escape for ``parse_mode=HTML``."""
     return html.escape("" if value is None else str(value), quote=False)
@@ -193,12 +239,24 @@ def duration(seconds: int) -> str:
 def menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN)],
             [
-                InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
-                InlineKeyboardButton("📋 My aliases", callback_data=cb.HISTORY),
+                InlineKeyboardButton(
+                    S("🎲 New alias"), callback_data=cb.GEN, style=STYLE_SUCCESS
+                )
             ],
-            [InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)],
+            [
+                InlineKeyboardButton(
+                    S("🔑 OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+                ),
+                InlineKeyboardButton(
+                    S("📋 My aliases"), callback_data=cb.HISTORY, style=STYLE_PRIMARY
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    S("💬 Feedback"), callback_data=cb.FEEDBACK, style=STYLE_PRIMARY
+                )
+            ],
         ]
     )
 
@@ -208,13 +266,17 @@ def pager_row(prefix_alias: str, page: int, has_more: bool) -> list[InlineKeyboa
     if page > 0:
         row.append(
             InlineKeyboardButton(
-                "⬅️ Newer", callback_data=cb.view_alias(prefix_alias, page - 1)
+                S("⬅️ Newer"),
+                callback_data=cb.view_alias(prefix_alias, page - 1),
+                style=STYLE_PRIMARY,
             )
         )
     if has_more:
         row.append(
             InlineKeyboardButton(
-                "Older ➡️", callback_data=cb.view_alias(prefix_alias, page + 1)
+                S("Older ➡️"),
+                callback_data=cb.view_alias(prefix_alias, page + 1),
+                style=STYLE_PRIMARY,
             )
         )
     return row
@@ -226,25 +288,26 @@ def welcome(config, *, max_aliases: int) -> str:
         f"🤖 <b>{esc(config.brand_name)}</b>\n\n"
         f"Generate unlimited Gmail aliases on <code>{esc(config.alias_address)}</code> "
         "and receive the mail (and OTP codes) right here.\n\n"
-        "<b>Commands</b>\n"
-        "/generate – new random alias\n"
-        "/generate &lt;name&gt; – pick your own\n"
-        "/history – your aliases\n"
-        "/view &lt;alias&gt; – messages for one alias\n"
-        "/otp – recent codes and verification links\n"
-        "/delete &lt;alias&gt; – stop showing an alias\n"
-        "/feedback – tell the admin something\n\n"
-        f"Messages are kept for {esc(duration(config.message_ttl_seconds))} and then "
-        f"deleted automatically. Up to {max_aliases} aliases per account.\n\n"
-        "Tap <b>New alias</b> to get started."
+        f"<b>{S('Commands')}</b>\n"
+        "/gen – new random alias\n"
+        "/gen &lt;name&gt; – pick your own\n"
+        "/h – your aliases\n"
+        "/v &lt;alias&gt; – messages for one alias\n"
+        "/o – recent codes and verification links\n"
+        "/del &lt;alias&gt; – stop showing an alias\n"
+        "/f – tell the admin something\n\n"
+        f"{S('Messages are kept for')} {esc(duration(config.message_ttl_seconds))} "
+        f"{S('and then deleted automatically.')} "
+        f"{S('Up to')} {S(max_aliases)} {S('aliases per account.')}\n\n"
+        f"{S('Tap')} <b>{S('New alias')}</b> {S('to get started.')}"
     )
 
 
 def alias_created(config, alias: str, label: str) -> tuple[str, InlineKeyboardMarkup]:
     text = (
-        "✅ <b>Alias ready</b>\n\n"
+        f"✅ <b>{S('Alias ready')}</b>\n\n"
         f"{code(config.full_alias(alias))}\n\n"
-        f"Style: <b>{esc(label)}</b>\n"
+        f"{S('Style')}: <b>{esc(label)}</b>\n"
         "• Give this address to the site you're signing up for\n"
         "• Mail arrives here automatically\n"
         "• OTP codes and verification links are detected for you\n"
@@ -252,12 +315,26 @@ def alias_created(config, alias: str, label: str) -> tuple[str, InlineKeyboardMa
     )
     keyboard = InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("👀 Messages", callback_data=cb.view_alias(alias))],
             [
-                InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
-                InlineKeyboardButton("🎲 Another", callback_data=cb.GEN),
+                InlineKeyboardButton(
+                    S("👀 Messages"),
+                    callback_data=cb.view_alias(alias),
+                    style=STYLE_PRIMARY,
+                )
             ],
-            [InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)],
+            [
+                InlineKeyboardButton(
+                    S("🔑 OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+                ),
+                InlineKeyboardButton(
+                    S("🎲 Another"), callback_data=cb.GEN, style=STYLE_SUCCESS
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    S("💬 Feedback"), callback_data=cb.FEEDBACK, style=STYLE_PRIMARY
+                )
+            ],
         ]
     )
     return text, keyboard
@@ -266,10 +343,10 @@ def alias_created(config, alias: str, label: str) -> tuple[str, InlineKeyboardMa
 def alias_list(config, aliases: Sequence[Alias]) -> tuple[str, InlineKeyboardMarkup]:
     if not aliases:
         return (
-            "📭 You have no aliases yet.\n\nCreate one with /generate.",
+            f"📭 {S('You have no aliases yet.')}\n\n{S('Create one with')} /gen",
             menu_keyboard(),
         )
-    lines = ["📋 <b>Your aliases</b>\n"]
+    lines = [f"📋 <b>{S('Your aliases')}</b>\n"]
     rows: list[list[InlineKeyboardButton]] = []
     for alias in aliases:
         lines.append(
@@ -279,24 +356,35 @@ def alias_list(config, aliases: Sequence[Alias]) -> tuple[str, InlineKeyboardMar
             rows.append(
                 [
                     InlineKeyboardButton(
-                        f"👀 {alias.name[:18]}", callback_data=cb.view_alias(alias.name)
+                        f"👀 {alias.name[:18]}",
+                        callback_data=cb.view_alias(alias.name),
+                        style=STYLE_PRIMARY,
                     ),
-                    InlineKeyboardButton("🗑", callback_data=cb.delete_alias(alias.name)),
+                    InlineKeyboardButton(
+                        "🗑",
+                        callback_data=cb.delete_alias(alias.name),
+                        style=STYLE_DANGER,
+                    ),
                 ]
             )
         else:
             rows.append(
                 [
                     InlineKeyboardButton(
-                        f"♻️ Restore {alias.name[:16]}",
+                        f"♻️ {S('Restore')} {alias.name[:16]}",
                         callback_data=cb.restore_alias(alias.name),
+                        style=STYLE_SUCCESS,
                     )
                 ]
             )
     rows.append(
         [
-            InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN),
-            InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+            InlineKeyboardButton(
+                S("🎲 New alias"), callback_data=cb.GEN, style=STYLE_SUCCESS
+            ),
+            InlineKeyboardButton(
+                S("🔑 OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+            ),
         ]
     )
     return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
@@ -345,12 +433,13 @@ def _link_row(message: Message) -> list[InlineKeyboardButton]:
     primary = links[0]
     row = [
         InlineKeyboardButton(
-            f"🔓 Open {clip(_host_of(primary), 20)}",
+            f"🔓 {S('Open')} {clip(_host_of(primary), 20)}",
             url=primary,
             style=STYLE_PRIMARY,
         ),
         InlineKeyboardButton(
-            "📋 Copy link", callback_data=cb.reveal_secret(message.id, "link"),
+            S("📋 Copy link"),
+            callback_data=cb.reveal_secret(message.id, "link"),
             style=STYLE_SUCCESS,
         ),
     ]
@@ -368,7 +457,7 @@ def _secret_buttons(messages: Sequence[Message]) -> list[list[InlineKeyboardButt
             rows.append(
                 [
                     InlineKeyboardButton(
-                        f"🔗 Open {clip(_host_of(extra), 20)}",
+                        f"🔗 {S('Open')} {clip(_host_of(extra), 20)}",
                         url=extra,
                         style=STYLE_PRIMARY,
                     )
@@ -383,14 +472,14 @@ def otp_digest(
     """Recent codes / links, newest first, paginated."""
     if not messages:
         return (
-            "📭 No OTP codes or verification links in the last "
-            "batch of messages.\n\nThey are deleted automatically after the TTL.",
+            f"📭 {S('No codes or links in the last batch of messages.')}\n\n"
+            f"{S('They are deleted automatically after the TTL.')}",
             menu_keyboard(),
         )
     start = page * OTP_ENTRIES_PER_PAGE
     window = list(messages[start : start + OTP_ENTRIES_PER_PAGE])
     total = len(messages) if total is None else total
-    lines = ["🔑 <b>Recent codes</b>\n"]
+    lines = [f"🔑 <b>{S('Recent codes')}</b>\n"]
     for message in window:
         lines.append(_entry_header(message))
         lines.append(f"👤 {esc(message.alias)}")
@@ -399,12 +488,26 @@ def otp_digest(
     rows = _secret_buttons(window)
     pager = []
     if page > 0:
-        pager.append(InlineKeyboardButton("⬅️ Newer", callback_data=cb.otp_page(page - 1)))
+        pager.append(
+            InlineKeyboardButton(
+                S("⬅️ Newer"), callback_data=cb.otp_page(page - 1), style=STYLE_PRIMARY
+            )
+        )
     if start + OTP_ENTRIES_PER_PAGE < total:
-        pager.append(InlineKeyboardButton("Older ➡️", callback_data=cb.otp_page(page + 1)))
+        pager.append(
+            InlineKeyboardButton(
+                S("Older ➡️"), callback_data=cb.otp_page(page + 1), style=STYLE_PRIMARY
+            )
+        )
     if pager:
         rows.append(pager)
-    rows.append([InlineKeyboardButton("💬 Feedback", callback_data=cb.FEEDBACK)])
+    rows.append(
+        [
+            InlineKeyboardButton(
+                S("💬 Feedback"), callback_data=cb.FEEDBACK, style=STYLE_PRIMARY
+            )
+        ]
+    )
     return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
 
 
@@ -418,21 +521,31 @@ def alias_messages(
     total = len(messages) if total is None else total
     if not messages:
         text = (
-            f"📭 No messages for {code(alias)} yet.\n\n"
-            "New mail shows up here automatically — tap refresh in a moment."
+            f"📭 {S('No messages for')} {code(alias)} {S('yet.')}\n\n"
+            f"{S('New mail shows up here automatically.')}"
         )
         keyboard = InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("🔄 Refresh", callback_data=cb.view_alias(alias))],
                 [
-                    InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
-                    InlineKeyboardButton("🎲 New alias", callback_data=cb.GEN),
+                    InlineKeyboardButton(
+                        S("🔄 Refresh"),
+                        callback_data=cb.view_alias(alias),
+                        style=STYLE_PRIMARY,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        S("🔑 OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+                    ),
+                    InlineKeyboardButton(
+                        S("🎲 New alias"), callback_data=cb.GEN, style=STYLE_SUCCESS
+                    ),
                 ],
             ]
         )
         return text, keyboard
 
-    lines = [f"📧 <b>{esc(alias)}</b> — {total} message(s)\n"]
+    lines = [f"📧 <b>{esc(alias)}</b> — {S(total)} {S('message(s)')}\n"]
     for message in messages:
         lines.append(_entry_header(message))
         if message.sender:
@@ -446,8 +559,14 @@ def alias_messages(
         rows.append(pager)
     rows.append(
         [
-            InlineKeyboardButton("🔄 Refresh", callback_data=cb.view_alias(alias, page)),
-            InlineKeyboardButton("🔑 OTPs", callback_data=cb.OTP_LIST),
+            InlineKeyboardButton(
+                S("🔄 Refresh"),
+                callback_data=cb.view_alias(alias, page),
+                style=STYLE_PRIMARY,
+            ),
+            InlineKeyboardButton(
+                S("🔑 OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+            ),
         ]
     )
     return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
@@ -460,7 +579,7 @@ def secret_reveal(label: str, value: str, action_hint: str) -> str:
 def link_copy(value: str) -> str:
     """Shown after pressing Copy link: the whole URL, tappable, nothing else."""
     return (
-        "📋 <b>Verification link</b>\n"
+        f"📋 <b>{S('Verification link')}</b>\n"
         f"{code(value)}\n\n"
         "<i>Tap the link above to copy it.</i>"
     )
@@ -468,17 +587,17 @@ def link_copy(value: str) -> str:
 
 def feedback_prompt() -> str:
     return (
-        "💬 <b>Feedback</b>\n\n"
-        "Send any message — or a photo with a caption — and the admin will see it.\n\n"
-        "Your Telegram name and user id are attached so replies are possible.\n"
-        "Send /cancel to leave feedback mode."
+        f"💬 <b>{S('Feedback')}</b>\n\n"
+        f"{S('Send any message, or a photo with a caption.')}\n\n"
+        f"{S('Your name and user id are attached.')}\n"
+        f"{S('Send')} /cancel {S('to leave feedback mode.')}"
     )
 
 
 # ------------------------------------------------------------------ force join
 def join_required(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
     """The gate screen: one link button per channel, plus a verify button."""
-    lines = ["🔒 <b>Join required</b>", "", "Join to use this bot:"]
+    lines = [f"🔒 <b>{S('Join required')}</b>", "", S("Join to use this bot:")]
     rows: list[list[InlineKeyboardButton]] = []
     for channel in channels:
         lines.append(f"• <b>{esc(channel.display)}</b>")
@@ -486,30 +605,37 @@ def join_required(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
             rows.append(
                 [
                     InlineKeyboardButton(
-                        f"➡️ Join {clip(channel.display, 26)}",
+                        f"➡️ {S('Join')} {clip(channel.display, 26)}",
                         url=channel.invite_link,
                         style=STYLE_PRIMARY,
                     )
                 ]
             )
-    lines += ["", "Then tap <b>I've joined</b> below."]
+    joined_label = S("I've joined")
+    lines += ["", f"{S('Then tap')} <b>{joined_label}</b> {S('below.')}"]
     rows.append(
-        [InlineKeyboardButton("✅ I've joined", callback_data=cb.JOIN_VERIFY, style=STYLE_SUCCESS)]
+        [
+            InlineKeyboardButton(
+                S("✅ I've joined"), callback_data=cb.JOIN_VERIFY, style=STYLE_SUCCESS
+            )
+        ]
     )
     return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
 
 
 # ----------------------------------------------------------------- admin panel
 def admin_panel(channels: Sequence, *, stats: dict[str, int] | None = None) -> tuple[str, InlineKeyboardMarkup]:
-    lines = ["🛠 <b>Admin panel</b>", "", "Use the buttons below."]
+    lines = [f"🛠 <b>{S('Admin panel')}</b>", "", S("Use the buttons below.")]
     if stats:
         lines = [
-            "🛠 <b>Admin panel</b>",
+            f"🛠 <b>{S('Admin panel')}</b>",
             "",
-            f"👥 Users: {stats.get('users', 0)} ({stats.get('banned', 0)} banned)",
-            f"📧 Aliases: {stats.get('aliases', 0)} ({stats.get('active_aliases', 0)} active)",
-            f"✉️ Messages: {stats.get('messages', 0)}",
-            f"📣 Required channels: {len(channels)}",
+            f"👥 {S('Users')}: {S(stats.get('users', 0))} "
+            f"({S(stats.get('banned', 0))} {S('banned')})",
+            f"📧 {S('Aliases')}: {S(stats.get('aliases', 0))} "
+            f"({S(stats.get('active_aliases', 0))} {S('active')})",
+            f"✉️ {S('Messages')}: {S(stats.get('messages', 0))}",
+            f"📣 {S('Required channels')}: {S(len(channels))}",
         ]
     rows: list[list[InlineKeyboardButton]] = [
         [
@@ -539,8 +665,9 @@ def admin_panel(channels: Sequence, *, stats: dict[str, int] | None = None) -> t
 def channels_admin(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
     if not channels:
         return (
-            "📣 <b>Required channels</b>\n\nNone yet — the bot is open to everyone.\n"
-            "Add one with ➕ Add channel.",
+            f"📣 <b>{S('Required channels')}</b>\n\n"
+            f"{S('None yet — the bot is open to everyone.')}\n"
+            f"{S('Add one with')} ➕ {S('Add channel')}.",
             InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton("➕ Add channel", callback_data=cb.ADMIN_ADD_CHANNEL, style=STYLE_SUCCESS)],
@@ -548,7 +675,7 @@ def channels_admin(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
                 ]
             ),
         )
-    lines = ["📣 <b>Required channels</b>", ""]
+    lines = [f"📣 <b>{S('Required channels')}</b>", ""]
     rows: list[list[InlineKeyboardButton]] = []
     for index, channel in enumerate(channels, start=1):
         link = f" — {esc(channel.invite_link)}" if channel.invite_link else ""
@@ -575,9 +702,9 @@ def trackers_admin(patterns: Sequence) -> tuple[str, InlineKeyboardMarkup]:
     """Learned wrapper patterns, with a one-tap undo for bad ones."""
     if not patterns:
         return (
-            "🧠 <b>Learned tracker patterns</b>\n\nNone yet. Turn on "
-            "<code>USE_AI_LINK_FALLBACK</code> and the bot learns click-wrapper "
-            "hosts from ambiguous mail, then filters them offline.",
+            f"🧠 <b>{S('Learned tracker patterns')}</b>\n\n"
+            f"{S('None yet. Turn on')} <code>USE_AI_LINK_FALLBACK</code> "
+            f"{S('and the bot learns wrapper hosts, then filters them offline.')}",
             InlineKeyboardMarkup(
                 [
                     [
@@ -589,9 +716,9 @@ def trackers_admin(patterns: Sequence) -> tuple[str, InlineKeyboardMarkup]:
             ),
         )
     lines = [
-        "🧠 <b>Learned tracker patterns</b>",
+        f"🧠 <b>{S('Learned tracker patterns')}</b>",
         "",
-        "Links on these hosts are treated as click wrappers and ranked last:",
+        S("Links on these hosts are treated as click wrappers and ranked last:"),
         "",
     ]
     rows: list[list[InlineKeyboardButton]] = []
@@ -623,7 +750,7 @@ def notice(message: str) -> str:
 
 def otp_notification(config, message: Message) -> tuple[str, InlineKeyboardMarkup]:
     """Heads-up sent when new mail with a code (or just a magic link) arrives."""
-    headline = "New code" if message.otp else "New link"
+    headline = S("New code") if message.otp else S("New link")
     lines = [f"🔔 <b>{headline}</b>\n", _entry_header(message)]
     lines.append(f"👤 {esc(message.alias)}")
     lines.extend(_entry_body(message))
@@ -633,9 +760,13 @@ def otp_notification(config, message: Message) -> tuple[str, InlineKeyboardMarku
     rows.append(
         [
             InlineKeyboardButton(
-                "👀 View messages", callback_data=cb.view_alias(message.alias)
+                S("👀 View messages"),
+                callback_data=cb.view_alias(message.alias),
+                style=STYLE_PRIMARY,
             ),
-            InlineKeyboardButton("🔑 All OTPs", callback_data=cb.OTP_LIST),
+            InlineKeyboardButton(
+                S("🔑 All OTPs"), callback_data=cb.OTP_LIST, style=STYLE_PRIMARY
+            ),
         ]
     )
     lines.append(f"\n⏰ Kept for {duration(config.message_ttl_seconds)}.")
@@ -644,7 +775,7 @@ def otp_notification(config, message: Message) -> tuple[str, InlineKeyboardMarku
 
 def mail_notification(config, message: Message) -> tuple[str, InlineKeyboardMarkup]:
     text = (
-        "📧 <b>New email</b>\n\n"
+        f"📧 <b>{S('New email')}</b>\n\n"
         f"👤 {esc(message.alias)}\n"
         f"📨 {esc(clip(message.subject, SUBJECT_PREVIEW_CHARS))}\n"
         f"🕒 {esc(message.received_display)}"
@@ -653,7 +784,9 @@ def mail_notification(config, message: Message) -> tuple[str, InlineKeyboardMark
         [
             [
                 InlineKeyboardButton(
-                    "👀 Read it", callback_data=cb.view_alias(message.alias)
+                    S("👀 Read it"),
+                    callback_data=cb.view_alias(message.alias),
+                    style=STYLE_PRIMARY,
                 )
             ]
         ]

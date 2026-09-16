@@ -77,13 +77,23 @@ def record(
     events.append(entry)
 
 
-def button_rows(markup) -> list[list[str]] | None:
+def button_rows(markup) -> list[list[dict]] | None:
+    """Label + colour, so the rendered preview shows what Telegram will draw."""
     if markup is None:
         return None
     rows = getattr(markup, "inline_keyboard", None)
     if not rows:
         return None
-    return [[button.text for button in row] for row in rows]
+    return [
+        [
+            {
+                "label": button.text,
+                "style": str(getattr(button.style, "value", button.style) or ""),
+            }
+            for button in row
+        ]
+        for row in rows
+    ]
 
 
 def drain_channel(bot: FakeBot, *, label: str = CHANNEL_LABEL) -> None:
@@ -311,6 +321,7 @@ def main() -> int:
     poller.run_once()
 
     # 4. codes, messages, history ------------------------------------------
+
     run_command(handlers, bot, "otp")
     run_command(handlers, bot, "view", [alias.name])
     run_command(handlers, bot, "history")

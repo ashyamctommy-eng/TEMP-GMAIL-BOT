@@ -53,7 +53,9 @@ def test_non_member_is_prompted_and_stopped(gate, bot, db):
     with pytest.raises(ApplicationHandlerStop):
         run(gate.middleware(update, context))
 
-    text = message.last.text
+    from gmailbot import formatting as fmt
+
+    text = fmt.unstyle(message.last.text)
     assert "Join required" in text and "Native Codes" in text
     buttons = [b for row in message.last.markup.inline_keyboard for b in row]
     assert any(b.url == "https://t.me/nativecodes" for b in buttons)

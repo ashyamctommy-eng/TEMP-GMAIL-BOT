@@ -9,6 +9,7 @@ from telegram import BotCommand, BotCommandScopeChat, Update
 from telegram.ext import Application, TypeHandler
 
 from .ai import make_link_judge, make_openrouter_lookup
+from . import formatting as fmt
 from .aliases import AliasGenerator
 from .config import Config, setup_logging
 from .db import Database
@@ -25,12 +26,12 @@ logger = logging.getLogger(__name__)
 #: Menu button automatically.
 COMMANDS = [
     BotCommand("start", "Show the menu"),
-    BotCommand("generate", "Create a new alias"),
-    BotCommand("otp", "Recent codes & verification links"),
-    BotCommand("history", "Your aliases"),
-    BotCommand("view", "Messages for one alias"),
-    BotCommand("delete", "Deactivate an alias"),
-    BotCommand("feedback", "Message the admin"),
+    BotCommand("gen", "Create a new alias"),
+    BotCommand("o", "Recent codes & verification links"),
+    BotCommand("h", "Your aliases"),
+    BotCommand("v", "Messages for one alias"),
+    BotCommand("del", "Deactivate an alias"),
+    BotCommand("f", "Message the admin"),
     BotCommand("cancel", "Leave feedback mode"),
     BotCommand("help", "How this bot works"),
 ]
@@ -56,6 +57,7 @@ def build_application(config: Config) -> Application:
     Everything is constructor-injected, which is what makes the test suite
     possible without a Telegram token, a Gmail account or a network.
     """
+    fmt.configure(styled_font=config.styled_font)
     db = Database(config.db_path)
 
     generator = AliasGenerator(

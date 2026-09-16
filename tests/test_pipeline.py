@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+from gmailbot import formatting as fmt
 from gmailbot.handlers import build_notification
 from gmailbot.mail import GmailPoller
 from gmailbot.models import utcnow
@@ -60,7 +61,7 @@ def test_mail_to_notification_pipeline(config, db):
     call = bot.photo_calls[0]
     assert call["chat_id"] == 1
     assert call["photo"].endswith("tempgmail.jpg")
-    caption = call["caption"]
+    caption = fmt.unstyle(call["caption"])
     assert "<code>483920</code>" in caption
     assert "https://acme.test/verify?token=zz" in caption
     assert "New code" in caption
@@ -94,7 +95,7 @@ def test_plain_mail_produces_a_quiet_notification(config, db):
 
     asyncio.run(scenario())
     assert len(bot.messages) == 1
-    assert "New email" in bot.messages[0][1]
+    assert "New email" in fmt.unstyle(bot.messages[0][1])
     assert config.credit_line in bot.messages[0][1]
     assert "483920" not in bot.messages[0][1]
     # Plain mail stays text-only; only code alerts get the image.
@@ -181,6 +182,7 @@ def test_link_only_mail_is_headlined_as_a_link_not_a_code(config, db):
         await notifier.stop()
 
     asyncio.run(scenario())
-    text = bot.photo_calls[0]["caption"] if bot.photo_calls else bot.messages[0][1]
+    raw = bot.photo_calls[0]["caption"] if bot.photo_calls else bot.messages[0][1]
+    text = fmt.unstyle(raw)
     assert "New link" in text and "New code" not in text
     assert "https://claude.ai/magic-link#tok" in text

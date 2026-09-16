@@ -50,6 +50,15 @@ PHONE_CSS = """
 FIND_JS = """
 (() => {
   const snippet = %s;
+  // The bot renders its own chrome in the brand font (Mathematical Bold Italic),
+  // so searches run against the plain-ASCII form of the text.
+  const plain = (text) => [...text].map((ch) => {
+    const c = ch.codePointAt(0);
+    if (c >= 0x1D468 && c <= 0x1D481) return String.fromCharCode(65 + c - 0x1D468);
+    if (c >= 0x1D482 && c <= 0x1D49B) return String.fromCharCode(97 + c - 0x1D482);
+    if (c >= 0x1D7CE && c <= 0x1D7D7) return String.fromCharCode(48 + c - 0x1D7CE);
+    return ch;
+  }).join('');
   document.querySelectorAll('#phone-shot').forEach(node => node.remove());
   document.head.insertAdjacentHTML('beforeend', %s);
   // The cards use overflow:hidden, which still lets *programmatic* scrolling
@@ -63,8 +72,8 @@ FIND_JS = """
   if (snippet === '__FIRST__') {
     target = cards[0];
   } else {
-    target = [...document.querySelectorAll('.bubble')].find(
-      node => node.textContent.includes(snippet)
+    target = [...document.querySelectorAll('.bubble, .btn')].find(
+      node => plain(node.textContent).includes(snippet)
     ) || null;
   }
   if (!target) return JSON.stringify({ok: false});

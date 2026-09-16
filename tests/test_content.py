@@ -339,3 +339,104 @@ def test_malformed_callback_data_is_survivable():
     assert cb.parse("x" * 200) == ("", [])
     assert cb.parse_view("garbage") == (None, 0)
     assert cb.parse_view("v:") == (None, 0)
+
+
+# ---------------------------------------------------------------- brand font
+def test_style_reproduces_the_brand_exactly():
+    """The mapping is derived from the code points, not hand-copied."""
+    assert fmt.style("Temp Gmail Bot") == "𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕"
+
+
+def test_style_round_trips():
+    for sample in ("Temp Gmail Bot", "Your aliases", "Recent codes 123",
+                   "Copy link / I've joined", "Admin panel: 42"):
+        assert fmt.unstyle(fmt.style(sample)) == sample
+
+
+def test_style_leaves_punctuation_and_emoji_alone():
+    assert fmt.style("🔑 OTPs: 12!") == "🔑 𝑶𝑻𝑷𝒔: 𝟏𝟐!"
+
+
+def test_headings_and_buttons_use_the_brand_font():
+    message = Message(
+        id=1, alias="tiger", subject="Verify", body="code 483920",
+        received_at=utcnow(), seen=False, otp="483920",
+        links=["https://acme.test/verify?token=abc"],
+    )
+    text, markup = fmt.otp_digest([message])
+    assert fmt.style("Recent codes") in text
+    labels = [b.text for row in markup.inline_keyboard for b in row]
+    assert any(fmt.style("Copy link") in label for label in labels)
+    assert any(fmt.style("Open") in label for label in labels)
+
+
+def test_data_is_never_styled():
+    """Codes, aliases, hosts and URLs must stay copyable ASCII."""
+    url = "https://claude.ai/magic-link#tok"
+    message = Message(
+        id=2, alias="swiftfalcon", subject="Link", body="",
+        received_at=utcnow(), seen=False, links=[url],
+    )
+    text, markup = fmt.otp_digest([message])
+    assert "swiftfalcon" in text                       # the alias, plain
+    assert fmt.style("swiftfalcon") not in text, "an alias must stay copyable"
+    assert f'href="{url}"' in text                     # the URL, untouched
+    for row in markup.inline_keyboard:
+        for button in row:
+            if button.url:
+                assert button.url == url, "a button URL must never be styled"
+
+
+def test_codes_are_plain_ascii():
+    message = Message(
+        id=3, alias="a", subject="s", body="", received_at=utcnow(),
+        seen=False, otp="483920",
+    )
+    text, _ = fmt.otp_digest([message])
+    assert "<code>483920</code>" in text
+    assert fmt.style("483920") not in text, "a styled code could not be copied verbatim"
+
+
+def test_buttons_are_coloured_on_the_user_side(config):
+    from gmailbot.formatting import STYLE_DANGER, STYLE_PRIMARY, STYLE_SUCCESS
+
+    aliases = [
+        Alias(name="live", active=True, created_at=utcnow()),
+        Alias(name="gone", active=False, created_at=utcnow()),
+    ]
+    _, markup = fmt.alias_list(config, aliases)
+    styles = [b.style for row in markup.inline_keyboard for b in row if b.style]
+    assert STYLE_PRIMARY in styles
+    assert STYLE_SUCCESS in styles
+    assert STYLE_DANGER in styles
+    # delete is the red one
+    red = [
+        b.callback_data for row in markup.inline_keyboard for b in row
+        if b.style is STYLE_DANGER
+    ]
+    assert any(data.startswith("d:") for data in red)
+
+
+def test_menu_keyboard_is_coloured():
+    from gmailbot import callbacks as cb
+    from gmailbot.formatting import STYLE_PRIMARY, STYLE_SUCCESS
+
+    markup = fmt.menu_keyboard()
+    buttons = {b.callback_data: b for row in markup.inline_keyboard for b in row}
+    assert buttons[cb.GEN].style is STYLE_SUCCESS, "the primary action is green"
+    assert buttons[cb.OTP_LIST].style is STYLE_PRIMARY
+    assert buttons[cb.HISTORY].style is STYLE_PRIMARY
+    assert buttons[cb.FEEDBACK].style is STYLE_PRIMARY
+
+
+def test_brand_font_can_be_switched_off():
+    """Old clients show these characters as boxes; one env var turns it off."""
+    from gmailbot.formatting import configure
+
+    try:
+        configure(styled_font=False)
+        assert fmt.style("Temp Gmail Bot") == "Temp Gmail Bot"
+        assert fmt.unstyle("Temp Gmail Bot") == "Temp Gmail Bot"
+    finally:
+        configure(styled_font=True)
+    assert fmt.style("Temp") == "𝑻𝒆𝒎𝒑"

@@ -135,6 +135,8 @@ class Config:
     brand_photo: Path | None = BRAND_PHOTO_DEFAULT
     send_brand_photo: bool = True
     #: Require users to join the configured channels before the bot responds.
+    #: Render the bot's own headings/labels in the brand font. Off = plain text.
+    styled_font: bool = True
     force_join_enabled: bool = True
     #: How long a membership result is trusted (protects the Bot API rate limit).
     membership_cache_seconds: int = 300
@@ -307,6 +309,9 @@ class Config:
             brand_photo=brand_photo,
             send_brand_photo=str(
                 env.get("SEND_BRAND_PHOTO", "true")
+            ).lower() in {"1", "true", "yes", "on"},
+            styled_font=str(
+                env.get("STYLED_FONT", "true")
             ).lower() in {"1", "true", "yes", "on"},
             force_join_enabled=str(
                 env.get("FORCE_JOIN", "true")

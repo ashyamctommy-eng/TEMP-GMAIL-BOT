@@ -138,28 +138,30 @@ class BotHandlers:
 
     # ------------------------------------------------------------- register
     def register(self, application: Application) -> None:
-        commands = {
-            "start": self.start,
-            "help": self.help,
-            "generate": self.generate,
-            "history": self.history,
-            "view": self.view,
-            "delete": self.delete,
-            "otp": self.otp,
-            "feedback": self.feedback,
-            "cancel": self.cancel,
-            "ban": self.ban,
-            "unban": self.unban,
-            "broadcast": self.broadcast,
-            "stats": self.stats,
-            "admin": self.admin,
-            "channels": self.channels,
-            "addchannel": self.addchannel,
-            "delchannel": self.delchannel,
-            "trackers": self.trackers,
+        # Short names are the advertised ones; the long spellings stay as aliases
+        # so nothing anyone already memorised stops working.
+        commands: dict[str, tuple[Callable, tuple[str, ...]]] = {
+            "start": (self.start, ()),
+            "help": (self.help, ()),
+            "gen": (self.generate, ("generate",)),
+            "h": (self.history, ("history",)),
+            "v": (self.view, ("view",)),
+            "del": (self.delete, ("delete",)),
+            "o": (self.otp, ("otp",)),
+            "f": (self.feedback, ("feedback",)),
+            "cancel": (self.cancel, ()),
+            "admin": (self.admin, ()),
+            "stats": (self.stats, ()),
+            "channels": (self.channels, ()),
+            "addchannel": (self.addchannel, ()),
+            "delchannel": (self.delchannel, ()),
+            "trackers": (self.trackers, ()),
+            "ban": (self.ban, ()),
+            "unban": (self.unban, ()),
+            "broadcast": (self.broadcast, ()),
         }
-        for name, handler in commands.items():
-            application.add_handler(CommandHandler(name, handler))
+        for name, (handler, aliases) in commands.items():
+            application.add_handler(CommandHandler((name, *aliases), handler))
         application.add_handler(CallbackQueryHandler(self.on_callback))
         application.add_handler(
             MessageHandler(filters.PHOTO & ~filters.COMMAND, self.on_photo)
@@ -321,7 +323,7 @@ class BotHandlers:
                 update,
                 fmt.error(
                     f"You already have {existing} aliases (limit "
-                    f"{self.config.max_aliases_per_user}). Delete one with /history "
+                    f"{self.config.max_aliases_per_user}). Delete one with /h "
                     "before creating another."
                 ),
                 markup=fmt.menu_keyboard(),
@@ -382,7 +384,7 @@ class BotHandlers:
         if await self._reject_if_banned(update):
             return
         if not context.args:
-            await self._reply(update, fmt.error("Usage: /view <alias> [page]"))
+            await self._reply(update, fmt.error("Usage: /v <alias> [page]"))
             return
         page = 0
         if len(context.args) > 1 and context.args[1].isdigit():
@@ -398,7 +400,7 @@ class BotHandlers:
                 update,
                 fmt.error(
                     f"No active alias {alias} for your account. "
-                    "Use /history to see your aliases."
+                    "Use /h to see your aliases."
                 ),
                 edit=edit,
             )
@@ -421,7 +423,7 @@ class BotHandlers:
         if await self._reject_if_banned(update):
             return
         if not context.args:
-            await self._reply(update, fmt.error("Usage: /delete <alias>"))
+            await self._reply(update, fmt.error("Usage: /del <alias>"))
             return
         alias = normalize(context.args[0])
         user = update.effective_user

@@ -82,7 +82,10 @@ header.page code { background: var(--code-bg); padding: 1px 5px; border-radius: 
 .bubble i { color: #c6d3de; font-style: italic; }
 .buttons { display: grid; gap: 4px; margin-top: 5px; width: 100%; }
 .buttons .row { display: flex; gap: 4px; }
-.btn { flex: 1; background: var(--button); color: var(--button-text); border-radius: 8px;
+.btn { flex: 1; background: var(--button); color: var(--button-text); border-radius: 8px; }
+.btn.primary { background: #2f6fb5; }
+.btn.success { background: #2f8f5b; }
+.btn.danger  { background: #b0413e; }
   padding: 6px 7px; font-size: 11.5px; text-align: center; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
 .note { align-self: center; color: var(--meta); font-size: 11px; text-align: center;
@@ -137,10 +140,18 @@ def render_message(event: dict) -> str:
     out = [f'<div class="msg {side}">', f'<div class="bubble">{image}{body}</div>']
     buttons = event.get("buttons")
     if buttons:
+        def render_button(button) -> str:
+            if isinstance(button, dict):
+                label, style = button.get("label", ""), button.get("style", "")
+            else:  # older session files stored plain labels
+                label, style = button, ""
+            css = {"primary": "primary", "success": "success", "danger": "danger"}.get(
+                str(style).lower(), ""
+            )
+            return f'<div class="btn {css}">{html.escape(str(label))}</div>'
+
         rows = "".join(
-            '<div class="row">'
-            + "".join(f'<div class="btn">{html.escape(label)}</div>' for label in row)
-            + "</div>"
+            '<div class="row">' + "".join(render_button(b) for b in row) + "</div>"
             for row in buttons
         )
         out.append(f'<div class="buttons">{rows}</div>')

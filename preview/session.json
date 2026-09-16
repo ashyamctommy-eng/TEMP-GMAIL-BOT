@@ -26,13 +26,19 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔒 <b>Join required</b>\n\nJoin to use this bot:\n• <b>Native Codes</b>\n\nThen tap <b>I've joined</b> below.",
+      "text": "🔒 <b>𝑱𝒐𝒊𝒏 𝒓𝒆𝒒𝒖𝒊𝒓𝒆𝒅</b>\n\n𝑱𝒐𝒊𝒏 𝒕𝒐 𝒖𝒔𝒆 𝒕𝒉𝒊𝒔 𝒃𝒐𝒕:\n• <b>Native Codes</b>\n\n𝑻𝒉𝒆𝒏 𝒕𝒂𝒑 <b>𝑰'𝒗𝒆 𝒋𝒐𝒊𝒏𝒆𝒅</b> 𝒃𝒆𝒍𝒐𝒘.",
       "buttons": [
         [
-          "➡️ Join Native Codes"
+          {
+            "label": "➡️ 𝑱𝒐𝒊𝒏 Native Codes",
+            "style": "primary"
+          }
         ],
         [
-          "✅ I've joined"
+          {
+            "label": "✅ 𝑰'𝒗𝒆 𝒋𝒐𝒊𝒏𝒆𝒅",
+            "style": "success"
+          }
         ]
       ]
     },
@@ -49,17 +55,29 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>Commands</b>\n/generate – new random alias\n/generate &lt;name&gt; – pick your own\n/history – your aliases\n/view &lt;alias&gt; – messages for one alias\n/otp – recent codes and verification links\n/delete &lt;alias&gt; – stop showing an alias\n/feedback – tell the admin something\n\nMessages are kept for 1 hour and then deleted automatically. Up to 25 aliases per account.\n\nTap <b>New alias</b> to get started.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>𝑪𝒐𝒎𝒎𝒂𝒏𝒅𝒔</b>\n/gen – new random alias\n/gen &lt;name&gt; – pick your own\n/h – your aliases\n/v &lt;alias&gt; – messages for one alias\n/o – recent codes and verification links\n/del &lt;alias&gt; – stop showing an alias\n/f – tell the admin something\n\n𝑴𝒆𝒔𝒔𝒂𝒈𝒆𝒔 𝒂𝒓𝒆 𝒌𝒆𝒑𝒕 𝒇𝒐𝒓 1 hour 𝒂𝒏𝒅 𝒕𝒉𝒆𝒏 𝒅𝒆𝒍𝒆𝒕𝒆𝒅 𝒂𝒖𝒕𝒐𝒎𝒂𝒕𝒊𝒄𝒂𝒍𝒍𝒚. 𝑼𝒑 𝒕𝒐 𝟐𝟓 𝒂𝒍𝒊𝒂𝒔𝒆𝒔 𝒑𝒆𝒓 𝒂𝒄𝒄𝒐𝒖𝒏𝒕.\n\n𝑻𝒂𝒑 <b>𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔</b> 𝒕𝒐 𝒈𝒆𝒕 𝒔𝒕𝒂𝒓𝒕𝒆𝒅.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🎲 New alias"
+          {
+            "label": "🎲 𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔",
+            "style": "success"
+          }
         ],
         [
-          "🔑 OTPs",
-          "📋 My aliases"
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑴𝒚 𝒂𝒍𝒊𝒂𝒔𝒆𝒔",
+            "style": "primary"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -71,17 +89,29 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>Commands</b>\n/generate – new random alias\n/generate &lt;name&gt; – pick your own\n/history – your aliases\n/view &lt;alias&gt; – messages for one alias\n/otp – recent codes and verification links\n/delete &lt;alias&gt; – stop showing an alias\n/feedback – tell the admin something\n\nMessages are kept for 1 hour and then deleted automatically. Up to 25 aliases per account.\n\nTap <b>New alias</b> to get started.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🤖 <b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\nGenerate unlimited Gmail aliases on <code>tempgail.inbox+{alias}@gmail.com</code> and receive the mail (and OTP codes) right here.\n\n<b>𝑪𝒐𝒎𝒎𝒂𝒏𝒅𝒔</b>\n/gen – new random alias\n/gen &lt;name&gt; – pick your own\n/h – your aliases\n/v &lt;alias&gt; – messages for one alias\n/o – recent codes and verification links\n/del &lt;alias&gt; – stop showing an alias\n/f – tell the admin something\n\n𝑴𝒆𝒔𝒔𝒂𝒈𝒆𝒔 𝒂𝒓𝒆 𝒌𝒆𝒑𝒕 𝒇𝒐𝒓 1 hour 𝒂𝒏𝒅 𝒕𝒉𝒆𝒏 𝒅𝒆𝒍𝒆𝒕𝒆𝒅 𝒂𝒖𝒕𝒐𝒎𝒂𝒕𝒊𝒄𝒂𝒍𝒍𝒚. 𝑼𝒑 𝒕𝒐 𝟐𝟓 𝒂𝒍𝒊𝒂𝒔𝒆𝒔 𝒑𝒆𝒓 𝒂𝒄𝒄𝒐𝒖𝒏𝒕.\n\n𝑻𝒂𝒑 <b>𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔</b> 𝒕𝒐 𝒈𝒆𝒕 𝒔𝒕𝒂𝒓𝒕𝒆𝒅.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🎲 New alias"
+          {
+            "label": "🎲 𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔",
+            "style": "success"
+          }
         ],
         [
-          "🔑 OTPs",
-          "📋 My aliases"
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑴𝒚 𝒂𝒍𝒊𝒂𝒔𝒆𝒔",
+            "style": "primary"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ],
       "photo": "/home/user/.workspace/projects/gmailbot/gmailbot/assets/tempgmail.jpg"
@@ -94,17 +124,29 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "✅ <b>Alias ready</b>\n\n<code>tempgail.inbox+safeemerald@gmail.com</code>\n\nStyle: <b>Adjective + Noun</b>\n• Give this address to the site you're signing up for\n• Mail arrives here automatically\n• OTP codes and verification links are detected for you\n• Codes are deleted after 1 hour\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "✅ <b>𝑨𝒍𝒊𝒂𝒔 𝒓𝒆𝒂𝒅𝒚</b>\n\n<code>tempgail.inbox+safeemerald@gmail.com</code>\n\n𝑺𝒕𝒚𝒍𝒆: <b>Adjective + Noun</b>\n• Give this address to the site you're signing up for\n• Mail arrives here automatically\n• OTP codes and verification links are detected for you\n• Codes are deleted after 1 hour\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "👀 Messages"
+          {
+            "label": "👀 𝑴𝒆𝒔𝒔𝒂𝒈𝒆𝒔",
+            "style": "primary"
+          }
         ],
         [
-          "🔑 OTPs",
-          "🎲 Another"
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "🎲 𝑨𝒏𝒐𝒕𝒉𝒆𝒓",
+            "style": "success"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -116,15 +158,27 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔔 <b>New code</b>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔔 <b>𝑵𝒆𝒘 𝒄𝒐𝒅𝒆</b>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open id.acme.example",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 id.acme.example",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "👀 View messages",
-          "🔑 All OTPs"
+          {
+            "label": "👀 𝑽𝒊𝒆𝒘 𝒎𝒆𝒔𝒔𝒂𝒈𝒆𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑨𝒍𝒍 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ],
       "note": "push alert (mail poller) + brand photo",
@@ -133,11 +187,17 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔔 <b>New code</b>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔔 <b>𝑵𝒆𝒘 𝒄𝒐𝒅𝒆</b>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "👀 View messages",
-          "🔑 All OTPs"
+          {
+            "label": "👀 𝑽𝒊𝒆𝒘 𝒎𝒆𝒔𝒔𝒂𝒈𝒆𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑨𝒍𝒍 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ],
       "note": "push alert (mail poller) + brand photo",
@@ -146,10 +206,13 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📧 <b>New email</b>\n\n👤 safeemerald\n📨 Your Northwind order 5691 has shipped\n🕒 11:00 UTC\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📧 <b>𝑵𝒆𝒘 𝒆𝒎𝒂𝒊𝒍</b>\n\n👤 safeemerald\n📨 Your Northwind order 5691 has shipped\n🕒 11:00 UTC\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "👀 Read it"
+          {
+            "label": "👀 𝑹𝒆𝒂𝒅 𝒊𝒕",
+            "style": "primary"
+          }
         ]
       ],
       "note": "push alert (mail poller)"
@@ -157,11 +220,17 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔔 <b>New code</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔔 <b>𝑵𝒆𝒘 𝒄𝒐𝒅𝒆</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "👀 View messages",
-          "🔑 All OTPs"
+          {
+            "label": "👀 𝑽𝒊𝒆𝒘 𝒎𝒆𝒔𝒔𝒂𝒈𝒆𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑨𝒍𝒍 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ],
       "note": "push alert (mail poller) + brand photo",
@@ -170,15 +239,27 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔔 <b>New link</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔔 <b>𝑵𝒆𝒘 𝒍𝒊𝒏𝒌</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open claude.ai",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 claude.ai",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "👀 View messages",
-          "🔑 All OTPs"
+          {
+            "label": "👀 𝑽𝒊𝒆𝒘 𝒎𝒆𝒔𝒔𝒂𝒈𝒆𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑨𝒍𝒍 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ],
       "note": "push alert (mail poller) + brand photo",
@@ -198,18 +279,33 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔑 <b>𝑹𝒆𝒄𝒆𝒏𝒕 𝒄𝒐𝒅𝒆𝒔</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open claude.ai",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 claude.ai",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔓 Open id.acme.example",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 id.acme.example",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -221,19 +317,37 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📧 <b>safeemerald</b> — 5 message(s)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📧 <b>safeemerald</b> — 𝟓 𝒎𝒆𝒔𝒔𝒂𝒈𝒆(𝒔)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open claude.ai",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 claude.ai",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔓 Open id.acme.example",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 id.acme.example",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔄 Refresh",
-          "🔑 OTPs"
+          {
+            "label": "🔄 𝑹𝒆𝒇𝒓𝒆𝒔𝒉",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -245,15 +359,27 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📋 <b>Your aliases</b>\n\n✅ <code>tempgail.inbox+safeemerald@gmail.com</code>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📋 <b>𝒀𝒐𝒖𝒓 𝒂𝒍𝒊𝒂𝒔𝒆𝒔</b>\n\n✅ <code>tempgail.inbox+safeemerald@gmail.com</code>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "👀 safeemerald",
-          "🗑"
+          {
+            "label": "👀 safeemerald",
+            "style": "primary"
+          },
+          {
+            "label": "🗑",
+            "style": "danger"
+          }
         ],
         [
-          "🎲 New alias",
-          "🔑 OTPs"
+          {
+            "label": "🎲 𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔",
+            "style": "success"
+          },
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -265,19 +391,37 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📧 <b>safeemerald</b> — 5 message(s)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📧 <b>safeemerald</b> — 𝟓 𝒎𝒆𝒔𝒔𝒂𝒈𝒆(𝒔)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open claude.ai",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 claude.ai",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔓 Open id.acme.example",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 id.acme.example",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔄 Refresh",
-          "🔑 OTPs"
+          {
+            "label": "🔄 𝑹𝒆𝒇𝒓𝒆𝒔𝒉",
+            "style": "primary"
+          },
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -289,18 +433,33 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔑 <b>𝑹𝒆𝒄𝒆𝒏𝒕 𝒄𝒐𝒅𝒆𝒔</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔓 Open claude.ai",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 claude.ai",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "🔓 Open id.acme.example",
-          "📋 Copy link"
+          {
+            "label": "🔓 𝑶𝒑𝒆𝒏 id.acme.example",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑪𝒐𝒑𝒚 𝒍𝒊𝒏𝒌",
+            "style": "success"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -315,14 +474,26 @@
       "text": "ℹ️ I didn't catch a command there. Send /generate for a new alias, /otp for recent codes, or /help for the full list.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🎲 New alias"
+          {
+            "label": "🎲 𝑵𝒆𝒘 𝒂𝒍𝒊𝒂𝒔",
+            "style": "success"
+          }
         ],
         [
-          "🔑 OTPs",
-          "📋 My aliases"
+          {
+            "label": "🔑 𝑶𝑻𝑷𝒔",
+            "style": "primary"
+          },
+          {
+            "label": "📋 𝑴𝒚 𝒂𝒍𝒊𝒂𝒔𝒆𝒔",
+            "style": "primary"
+          }
         ],
         [
-          "💬 Feedback"
+          {
+            "label": "💬 𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌",
+            "style": "primary"
+          }
         ]
       ]
     },
@@ -334,7 +505,7 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "💬 <b>Feedback</b>\n\nSend any message — or a photo with a caption — and the admin will see it.\n\nYour Telegram name and user id are attached so replies are possible.\nSend /cancel to leave feedback mode.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚"
+      "text": "💬 <b>𝑭𝒆𝒆𝒅𝒃𝒂𝒄𝒌</b>\n\n𝑺𝒆𝒏𝒅 𝒂𝒏𝒚 𝒎𝒆𝒔𝒔𝒂𝒈𝒆, 𝒐𝒓 𝒂 𝒑𝒉𝒐𝒕𝒐 𝒘𝒊𝒕𝒉 𝒂 𝒄𝒂𝒑𝒕𝒊𝒐𝒏.\n\n𝒀𝒐𝒖𝒓 𝒏𝒂𝒎𝒆 𝒂𝒏𝒅 𝒖𝒔𝒆𝒓 𝒊𝒅 𝒂𝒓𝒆 𝒂𝒕𝒕𝒂𝒄𝒉𝒆𝒅.\n𝑺𝒆𝒏𝒅 /cancel 𝒕𝒐 𝒍𝒆𝒂𝒗𝒆 𝒇𝒆𝒆𝒅𝒃𝒂𝒄𝒌 𝒎𝒐𝒅𝒆.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚"
     },
     {
       "chat": "user",
@@ -365,26 +536,59 @@
     {
       "chat": "admin",
       "role": "out",
-      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 5\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🛠 <b>𝑨𝒅𝒎𝒊𝒏 𝒑𝒂𝒏𝒆𝒍</b>\n\n👥 𝑼𝒔𝒆𝒓𝒔: 𝟏 (𝟎 𝒃𝒂𝒏𝒏𝒆𝒅)\n📧 𝑨𝒍𝒊𝒂𝒔𝒆𝒔: 𝟏 (𝟏 𝒂𝒄𝒕𝒊𝒗𝒆)\n✉️ 𝑴𝒆𝒔𝒔𝒂𝒈𝒆𝒔: 𝟓\n📣 𝑹𝒆𝒒𝒖𝒊𝒓𝒆𝒅 𝒄𝒉𝒂𝒏𝒏𝒆𝒍𝒔: 𝟏\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "📊 Stats",
-          "📣 Broadcast"
+          {
+            "label": "📊 Stats",
+            "style": "primary"
+          },
+          {
+            "label": "📣 Broadcast",
+            "style": "primary"
+          }
         ],
         [
-          "🚫 Ban",
-          "✅ Unban"
+          {
+            "label": "🚫 Ban",
+            "style": "danger"
+          },
+          {
+            "label": "✅ Unban",
+            "style": "success"
+          }
         ],
         [
-          "➕ Add channel",
-          "➖ Remove channel"
+          {
+            "label": "➕ Add channel",
+            "style": "success"
+          },
+          {
+            "label": "➖ Remove channel",
+            "style": "danger"
+          }
         ],
         [
-          "📋 Manage channels",
-          "🔄 Refresh"
+          {
+            "label": "📋 Channels",
+            "style": "primary"
+          },
+          {
+            "label": "🧠 Trackers",
+            "style": "primary"
+          }
         ],
         [
-          "✖️ Close"
+          {
+            "label": "🔄 Refresh",
+            "style": "primary"
+          }
+        ],
+        [
+          {
+            "label": "✖️ Close",
+            "style": "danger"
+          }
         ]
       ]
     },
@@ -396,26 +600,59 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 5\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🛠 <b>𝑨𝒅𝒎𝒊𝒏 𝒑𝒂𝒏𝒆𝒍</b>\n\n👥 𝑼𝒔𝒆𝒓𝒔: 𝟏 (𝟎 𝒃𝒂𝒏𝒏𝒆𝒅)\n📧 𝑨𝒍𝒊𝒂𝒔𝒆𝒔: 𝟏 (𝟏 𝒂𝒄𝒕𝒊𝒗𝒆)\n✉️ 𝑴𝒆𝒔𝒔𝒂𝒈𝒆𝒔: 𝟓\n📣 𝑹𝒆𝒒𝒖𝒊𝒓𝒆𝒅 𝒄𝒉𝒂𝒏𝒏𝒆𝒍𝒔: 𝟏\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "📊 Stats",
-          "📣 Broadcast"
+          {
+            "label": "📊 Stats",
+            "style": "primary"
+          },
+          {
+            "label": "📣 Broadcast",
+            "style": "primary"
+          }
         ],
         [
-          "🚫 Ban",
-          "✅ Unban"
+          {
+            "label": "🚫 Ban",
+            "style": "danger"
+          },
+          {
+            "label": "✅ Unban",
+            "style": "success"
+          }
         ],
         [
-          "➕ Add channel",
-          "➖ Remove channel"
+          {
+            "label": "➕ Add channel",
+            "style": "success"
+          },
+          {
+            "label": "➖ Remove channel",
+            "style": "danger"
+          }
         ],
         [
-          "📋 Manage channels",
-          "🔄 Refresh"
+          {
+            "label": "📋 Channels",
+            "style": "primary"
+          },
+          {
+            "label": "🧠 Trackers",
+            "style": "primary"
+          }
         ],
         [
-          "✖️ Close"
+          {
+            "label": "🔄 Refresh",
+            "style": "primary"
+          }
+        ],
+        [
+          {
+            "label": "✖️ Close",
+            "style": "danger"
+          }
         ]
       ]
     },
@@ -427,14 +664,23 @@
     {
       "chat": "admin",
       "role": "out",
-      "text": "📣 <b>Required channels</b>\n\n1. <b>Native Codes</b> <code>@nativecodes</code> — https://t.me/nativecodes\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📣 <b>𝑹𝒆𝒒𝒖𝒊𝒓𝒆𝒅 𝒄𝒉𝒂𝒏𝒏𝒆𝒍𝒔</b>\n\n1. <b>Native Codes</b> <code>@nativecodes</code> — https://t.me/nativecodes\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🗑 Remove Native Codes"
+          {
+            "label": "🗑 Remove Native Codes",
+            "style": "danger"
+          }
         ],
         [
-          "➕ Add channel",
-          "⬅️ Back"
+          {
+            "label": "➕ Add channel",
+            "style": "success"
+          },
+          {
+            "label": "⬅️ Back",
+            "style": "primary"
+          }
         ]
       ]
     },

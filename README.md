@@ -53,16 +53,18 @@ Then send `/start` to your bot.
 
 The bot registers these with Telegram on startup — no BotFather setup.
 
-| Command | What it does |
-| --- | --- |
-| `/start`, `/help` | welcome + menu (with brand photo) |
-| `/generate [name]` | new alias, random or your own |
-| `/history` | your aliases, delete/restore |
-| `/view <alias> [page]` | messages for one alias |
-| `/otp` | recent codes and links (with brand photo) |
-| `/delete <alias>` | deactivate an alias |
-| `/feedback` | send text or a screenshot to the admin |
-| `/cancel` | leave feedback mode |
+Short commands; the long spellings still work as aliases.
+
+| Command | Alias | What it does |
+| --- | --- | --- |
+| `/start`, `/help` | | welcome + menu (with brand photo) |
+| `/gen [name]` | `/generate` | new alias, random or your own |
+| `/o` | `/otp` | recent codes and links (with brand photo) |
+| `/h` | `/history` | your aliases, delete/restore |
+| `/v <alias> [page]` | `/view` | messages for one alias |
+| `/del <alias>` | `/delete` | deactivate an alias |
+| `/f` | `/feedback` | send text or a screenshot to the admin |
+| `/cancel` | | leave feedback mode |
 | `/admin` | **admin panel** — colour-coded inline buttons for every admin action |
 | `/channels` | list required channels, remove them with one tap |
 | `/addchannel <@handle> [link]` | require a channel before the bot answers |
@@ -85,6 +87,16 @@ different — it sends up to 4000 characters of the raw body, so I leave it off.
 The owner is never blocked, and if a channel cannot be checked (bot not admin,
 channel deleted) the user is let through and it is logged, so I can't lock
 everyone out by accident.
+
+## Look
+
+My own headings and button labels render in the brand font
+(`𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕`): codes, aliases, subjects and links always stay plain ASCII
+so they remain copyable and clickable. Buttons are colour-coded — 🟢 green for the
+main action, 🔵 blue for navigation, 🔴 red for anything destructive. Colour needs a
+Telegram client from February 2026 or newer; older ones draw their default colour,
+which is why every label also reads on its own. `STYLED_FONT=false` turns the font
+off if a client shows boxes instead of letters.
 
 ## Settings
 
@@ -109,6 +121,7 @@ Everything is env config — I never hardcode it.
 | `BOT_BRAND_NAME` | `𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕` | name in the welcome, description and captions |
 | `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …` on every message |
 | `BOT_PHOTO_PATH` / `SEND_BRAND_PHOTO` | bundled image / `true` | photo on `/start` and OTP alerts |
+| `STYLED_FONT` | `true` | brand font on the bot's own text (off = plain ASCII) |
 | `OPENROUTER_API_KEY` | empty | key for the optional AI helpers below |
 | `USE_AI_LINK_FALLBACK` | `false` | let the AI spot unknown click wrappers, then remember the host pattern |
 | `LINK_JUDGE_MODEL` | `openai/gpt-4o-mini` | model used for that classification |

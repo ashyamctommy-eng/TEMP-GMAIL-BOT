@@ -23,19 +23,52 @@ def registered_commands(application) -> set[str]:
     return found
 
 
-def test_every_command_is_advertised_in_the_menu(config):
-    """The bot registers its own command menu, so no BotFather setup is needed."""
+def test_every_handler_has_an_advertised_name(config):
+    """The bot registers its own command menu, so no BotFather setup is needed.
+
+    Handlers may register several spellings (short name + long alias); what
+    matters is that each one is reachable from the advertised menu.
+    """
     application = build_application(config)
     advertised = {command.command for command in ADMIN_COMMANDS}
+    found = 0
+    for group in application.handlers.values():
+        for handler in group:
+            if isinstance(handler, CommandHandler):
+                found += 1
+                assert handler.commands & advertised, (
+                    f"no advertised name for {sorted(handler.commands)}"
+                )
+    assert found > 0, "no command handlers registered"
+
+
+def test_short_names_are_advertised_and_long_names_still_work(config):
+    application = build_application(config)
     registered = registered_commands(application)
-    assert registered, "no command handlers registered"
-    assert registered <= advertised, f"missing from the menu: {registered - advertised}"
+    public = {command.command for command in COMMANDS}
+
+    assert {"gen", "h", "v", "del", "o", "f"} <= public, "the short names are the menu"
+    assert {"generate", "history", "view", "delete", "otp", "feedback"} <= registered, (
+        "the long spellings must keep working as aliases"
+    )
 
 
 def test_admin_commands_are_not_in_the_public_menu():
     public = {command.command for command in COMMANDS}
-    assert {"ban", "unban", "broadcast", "stats"}.isdisjoint(public)
-    assert {"generate", "otp", "help", "start"} <= public
+    admin_only = {
+        "ban", "unban", "broadcast", "stats", "admin",
+        "channels", "addchannel", "delchannel", "trackers",
+    }
+    assert admin_only.isdisjoint(public)
+    assert {"gen", "o", "h", "v", "del", "f", "help", "start"} <= public
+
+
+def test_short_command_names_are_reserved_as_aliases():
+    """A user must not be able to claim an alias called 'gen' or 'o'."""
+    from gmailbot.aliases import validation_error
+
+    for name in ("gen", "del", "f", "h", "v", "o", "c", "s"):
+        assert validation_error(name) is not None, f"{name} must be reserved"
 
 
 def test_menu_entries_respect_telegram_limits():

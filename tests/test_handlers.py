@@ -7,6 +7,7 @@ from dataclasses import replace
 
 import pytest
 
+from gmailbot import formatting as fmt
 from gmailbot.aliases import AliasGenerator
 from gmailbot.handlers import BotHandlers, ChannelGuard
 from gmailbot.notify import Notifier
@@ -443,7 +444,7 @@ def test_admin_panel_is_admin_only(handlers, bot, db):
 def test_admin_panel_has_coloured_buttons_for_every_action(handlers, bot, db):
     update, context = make_command_update("admin", user_id=ADMIN, bot=bot)
     run(handlers.admin(update, context))
-    text = update.effective_message.last.text
+    text = fmt.unstyle(update.effective_message.last.text)
     buttons = panel_buttons(update.effective_message.last.markup)
 
     assert "Admin panel" in text
@@ -470,7 +471,7 @@ def test_panel_stats_callback_edits_in_place(handlers, bot, db):
     db.add_alias(1, "tiger123")
     update, context, query = make_callback_update("ad:stats", user_id=ADMIN, bot=bot)
     run(handlers.on_callback(update, context))
-    assert query.edits and "Aliases: 1" in query.edits[-1].text
+    assert query.edits and "Aliases: 1" in fmt.unstyle(query.edits[-1].text)
 
 
 def test_panel_ban_flow_asks_then_applies(handlers, bot, db):
@@ -557,7 +558,7 @@ def test_remove_channel_button_removes_it(handlers, bot, db):
     update, context, query = make_callback_update("ad:rmch:@nativecodes", user_id=ADMIN, bot=bot)
     run(handlers.on_callback(update, context))
     assert db.list_required_channels() == []
-    assert "None yet" in query.edits[-1].text
+    assert "None yet" in fmt.unstyle(query.edits[-1].text)
 
 
 def test_addchannel_command_stores_the_channel(handlers, bot, db):
@@ -648,7 +649,7 @@ def test_copy_button_replies_with_only_the_url(handlers, bot, db):
     run(handlers.on_callback(update, context))
 
     payloads = [edit.text for edit in query.edits] + [m.text for m in update.effective_message.sent]
-    reply = next(p for p in payloads if "Verification link" in p)
+    reply = next(p for p in payloads if "Verification link" in fmt.unstyle(p))
     assert f"<code>{MAGIC}</code>" in reply
     # nothing to select around it
     assert "<http" not in reply
