@@ -27,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import dataclasses
 from pathlib import Path
 from typing import Callable
 
@@ -50,6 +51,7 @@ from telegram.ext import (
 from . import callbacks as cb
 from . import formatting as fmt
 from .aliases import AliasGenerator, label_for, normalize, validation_error
+from .links import extract_link_urls
 from .config import Config
 from .db import Database
 from .membership import MembershipGate
@@ -154,6 +156,7 @@ class BotHandlers:
             "channels": self.channels,
             "addchannel": self.addchannel,
             "delchannel": self.delchannel,
+            "trackers": self.trackers,
         }
         for name, handler in commands.items():
             application.add_handler(CommandHandler(name, handler))
@@ -408,6 +411,7 @@ class BotHandlers:
         messages = await self._db(
             self.db.alias_messages, user.id, alias, limit=PAGE_SIZE, offset=offset
         )
+        messages = await self._refresh_links(messages)
         text, markup = fmt.alias_messages(alias, messages, page=page, total=total)
         await self._reply(update, text, markup, edit=edit)
         for message in messages:
@@ -444,6 +448,7 @@ class BotHandlers:
         user = update.effective_user
         assert user is not None
         recent = await self._db(self.db.recent_messages, user.id, limit=60)
+        recent = await self._refresh_links(recent)
         with_secrets = [message for message in recent if message.has_secret]
         text, markup = fmt.otp_digest(with_secrets, page=page, total=len(with_secrets))
         await self._reply(update, text, markup, edit=edit, photo=photo and not edit)
@@ -691,6 +696,34 @@ class BotHandlers:
         text, markup = fmt.admin_panel(channels, stats=stats)
         await self._reply(update, text, markup)
 
+    async def trackers(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Learned click-wrapper patterns, with a one-tap undo."""
+        if not self._admin_only(update):
+            return
+        patterns = await self._db(self.db.list_link_patterns)
+        text, markup = fmt.trackers_admin(patterns)
+        await self._reply(update, text, markup)
+
+    async def _refresh_links(self, messages: list) -> list:
+        """Re-rank stored links with the current rules.
+
+        Messages stored before a rule or pattern existed keep their old order, so
+        the first time they are viewed they are re-extracted and repaired in
+        place -- otherwise the fix would only apply to mail that arrives later.
+        """
+        patterns = await self._db(self.db.tracker_patterns)
+        refreshed = []
+        for message in messages:
+            if not message.links or not message.body:
+                refreshed.append(message)
+                continue
+            reranked = extract_link_urls(message.body, learned=patterns)
+            if reranked and reranked != message.links:
+                await self._db(self.db.update_message_links, message.id, reranked)
+                message = dataclasses.replace(message, links=reranked)
+            refreshed.append(message)
+        return refreshed
+
     async def channels(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not self._admin_only(update):
             return
@@ -893,6 +926,22 @@ class BotHandlers:
             stats = await self._db(self.db.stats)
             channels = await self._db(self.db.list_required_channels)
             text, markup = fmt.admin_panel(channels, stats=stats)
+            await self._reply(update, text, markup, edit=True)
+            return
+        if data == cb.ADMIN_TRACKERS:
+            patterns = await self._db(self.db.list_link_patterns)
+            text, markup = fmt.trackers_admin(patterns)
+            await self._reply(update, text, markup, edit=True)
+            return
+        removed_tracker = cb.parse_remove_tracker(data)
+        if removed_tracker is not None:
+            patterns = await self._db(self.db.list_link_patterns)
+            if 0 <= removed_tracker < len(patterns):
+                await self._db(
+                    self.db.remove_link_pattern, patterns[removed_tracker].pattern
+                )
+            remaining = await self._db(self.db.list_link_patterns)
+            text, markup = fmt.trackers_admin(remaining)
             await self._reply(update, text, markup, edit=True)
             return
         if data in (cb.ADMIN_CHANNELS, cb.ADMIN_DEL_CHANNEL):

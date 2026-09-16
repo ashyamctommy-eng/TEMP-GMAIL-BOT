@@ -67,10 +67,19 @@ The bot registers these with Telegram on startup — no BotFather setup.
 | `/channels` | list required channels, remove them with one tap |
 | `/addchannel <@handle> [link]` | require a channel before the bot answers |
 | `/delchannel <@handle\|id\|number>` | stop requiring a channel |
+| `/trackers` | learned click-wrapper patterns, with one-tap undo |
 | `/stats`, `/ban`, `/unban`, `/broadcast` | admin only (also on the panel) |
 
 Send a plain word and it asks before creating an alias. `/ban`, `/unban`,
 `/broadcast` and `/addchannel` also run from the panel — it asks for the value.
+
+**Tracker learning (optional):** with `USE_AI_LINK_FALLBACK=true` the bot asks the
+model about a mail only when two or more links have unknown wrapper status, sends
+**redacted** URLs (host, path and parameter names — never a token), and stores the
+wrapper's host pattern so every later mail is handled offline. `/trackers` shows
+what was learned and undoes it. It is a teacher, never a runtime dependency: if
+the API is down, nothing is learned and nothing breaks. `USE_AI_OTP_FALLBACK` is
+different — it sends up to 4000 characters of the raw body, so I leave it off.
 
 **Force-join:** users must be in every required channel before any command works.
 The owner is never blocked, and if a channel cannot be checked (bot not admin,
@@ -100,7 +109,10 @@ Everything is env config — I never hardcode it.
 | `BOT_BRAND_NAME` | `𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕` | name in the welcome, description and captions |
 | `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …` on every message |
 | `BOT_PHOTO_PATH` / `SEND_BRAND_PHOTO` | bundled image / `true` | photo on `/start` and OTP alerts |
-| `OPENROUTER_API_KEY` / `USE_AI_OTP_FALLBACK` | off | optional AI fallback when regex finds no code |
+| `OPENROUTER_API_KEY` | empty | key for the optional AI helpers below |
+| `USE_AI_LINK_FALLBACK` | `false` | let the AI spot unknown click wrappers, then remember the host pattern |
+| `LINK_JUDGE_MODEL` | `openai/gpt-4o-mini` | model used for that classification |
+| `USE_AI_OTP_FALLBACK` | `false` | last-resort OTP extraction — sends raw email body, see note |
 
 ## How it works
 

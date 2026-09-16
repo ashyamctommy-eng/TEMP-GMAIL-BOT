@@ -35,8 +35,9 @@ from typing import Callable, Iterable, Protocol
 
 from .config import Config
 from .db import Database
+from .ai import redact_url
 from .htmltext import html_to_text
-from .links import extract_link_urls
+from .links import extract_links, extract_link_urls, learn_host_pattern
 from .models import StoredMessage, to_iso, utcnow
 from .otp import OtpExtractor
 
@@ -44,6 +45,9 @@ logger = logging.getLogger(__name__)
 
 MAX_BODY_CHARS = 20_000
 MAX_FETCH_PER_CYCLE = 50
+#: Upper bound on model calls per poll cycle. The judge is optional assistance,
+#: not a per-message tax on every mail that happens to contain two links.
+MAX_JUDGE_CALLS_PER_CYCLE = 5
 _RECIPIENT_HEADERS = (
     "To", "Cc", "Delivered-To", "X-Original-To", "X-Delivered-To", "Envelope-To",
 )
@@ -204,8 +208,12 @@ class GmailPoller:
         extractor: OtpExtractor | None = None,
         sleep: Callable[[float], None] = time.sleep,
         rng: random.Random | None = None,
+        judge: Callable[[list[str]], tuple[int, tuple[int, ...]]] | None = None,
     ) -> None:
         self.config = config
+        #: Optional AI link classifier. Used only to LEARN wrapper patterns, and
+        #: only on ambiguous mail; it never becomes a runtime dependency.
+        self._judge = judge
         self.db = db
         self.on_message = on_message
         self._client_factory = client_factory or (
@@ -215,6 +223,7 @@ class GmailPoller:
         self._sleep = sleep
         self._rng = rng or random.Random()
         self._client: ImapClient | None = None
+        self._judge_calls = 0
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -288,6 +297,7 @@ class GmailPoller:
                 f"IMAP SELECT {self.config.imap_mailbox!r} failed: {status}"
             )
 
+        self._judge_calls = 0
         uids = self._pending_uids(client)
         if not uids:
             self.db.prune_messages(self.config.message_ttl_seconds)
@@ -299,6 +309,52 @@ class GmailPoller:
             processed += 1
         self.db.prune_messages(self.config.message_ttl_seconds)
         return processed
+
+    def _consult_judge(self, links: list[str], learned: list[str]) -> list[str]:
+        """Reorder ambiguous links and learn the wrapper pattern for next time.
+
+        The question is only worth asking when there are **two or more links whose
+        wrapper status is still unknown**: if everything except the obvious link is
+        already known to be a tracker, the deterministic rules have it handled and
+        a model call would teach nothing.
+
+        Failures are swallowed on purpose -- an optional helper must never cost us
+        a message. Returning ``links`` unchanged is always safe.
+        """
+        if self._judge is None or self._judge_calls >= MAX_JUDGE_CALLS_PER_CYCLE:
+            return links
+        if not 2 <= len(links) <= 5:
+            return links
+
+        scored = extract_links(" ".join(links), learned=learned)
+        unknown = [link for link in scored if not link.tracker]
+        if len(unknown) < 2 or len(unknown) > 4:
+            return links
+
+        self._judge_calls += 1
+        try:
+            # Redacted here, at the boundary: whatever judge is plugged in cannot
+            # receive a token even by accident. This is the only place mail
+            # content leaves the process.
+            real, wrappers = self._judge([redact_url(url) for url in links])
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("link judge failed, keeping the offline result: %s", exc)
+            return links
+
+        if not wrappers:
+            return links
+        for index in wrappers:
+            pattern = learn_host_pattern(links[index])
+            if pattern:
+                self.db.add_link_pattern(pattern, kind="tracker", source="ai")
+                logger.info(
+                    "learned tracker pattern %r from %.60s", pattern, links[index]
+                )
+        if real <= 0:
+            return links
+        # The link the judge picked goes first; everything else stays behind it.
+        remainder = [url for position, url in enumerate(links) if position != real]
+        return [links[real], *remainder]
 
     def _pending_uids(self, client: ImapClient) -> list[int]:
         """UIDs to fetch, oldest first."""
@@ -344,7 +400,9 @@ class GmailPoller:
             return
 
         otp = self._extractor.extract(parsed.text)
-        links = extract_link_urls(parsed.text)
+        learned = self.db.tracker_patterns()
+        links = extract_link_urls(parsed.text, learned=learned)
+        links = self._consult_judge(links, learned)
         stored = self.db.add_message(
             alias,
             parsed.subject,

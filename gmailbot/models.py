@@ -103,6 +103,19 @@ class RequiredChannel:
 
 
 @dataclass(frozen=True)
+class LinkPattern:
+    """A learned host pattern, e.g. ``url*.mail.anthropic.com``."""
+
+    pattern: str
+    source: str = "ai"          # ai | admin
+    added_at: datetime | None = None
+
+    @property
+    def added_display(self) -> str:
+        return self.added_at.strftime("%d %b %H:%M UTC") if self.added_at else ""
+
+
+@dataclass(frozen=True)
 class AliasAddResult:
     ok: bool
     reason: str = ""

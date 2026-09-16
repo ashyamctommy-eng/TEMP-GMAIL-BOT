@@ -8,7 +8,7 @@ import logging
 from telegram import BotCommand, BotCommandScopeChat, Update
 from telegram.ext import Application, TypeHandler
 
-from .ai import make_openrouter_lookup
+from .ai import make_link_judge, make_openrouter_lookup
 from .aliases import AliasGenerator
 from .config import Config, setup_logging
 from .db import Database
@@ -43,6 +43,7 @@ ADMIN_COMMANDS = COMMANDS + [
     BotCommand("channels", "Required channels"),
     BotCommand("addchannel", "Require a channel to use the bot"),
     BotCommand("delchannel", "Stop requiring a channel"),
+    BotCommand("trackers", "Learned click-wrapper patterns"),
     BotCommand("ban", "Ban a user"),
     BotCommand("unban", "Unban a user"),
     BotCommand("broadcast", "Message every user"),
@@ -73,6 +74,13 @@ def build_application(config: Config) -> Application:
         db,
         on_message=notifier.emit,
         extractor=extractor,
+        # Teacher, not runtime dependency: used only on ambiguous links, and only
+        # to learn a host pattern the deterministic rules apply from then on.
+        judge=(
+            make_link_judge(config.openrouter_api_key, model=config.link_judge_model)
+            if config.use_ai_link_fallback
+            else None
+        ),
     )
     gate = MembershipGate(
         db,

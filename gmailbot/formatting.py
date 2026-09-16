@@ -525,7 +525,10 @@ def admin_panel(channels: Sequence, *, stats: dict[str, int] | None = None) -> t
             InlineKeyboardButton("➖ Remove channel", callback_data=cb.ADMIN_DEL_CHANNEL, style=STYLE_DANGER),
         ],
         [
-            InlineKeyboardButton("📋 Manage channels", callback_data=cb.ADMIN_CHANNELS, style=STYLE_PRIMARY),
+            InlineKeyboardButton("📋 Channels", callback_data=cb.ADMIN_CHANNELS, style=STYLE_PRIMARY),
+            InlineKeyboardButton("🧠 Trackers", callback_data=cb.ADMIN_TRACKERS, style=STYLE_PRIMARY),
+        ],
+        [
             InlineKeyboardButton("🔄 Refresh", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY),
         ],
         [InlineKeyboardButton("✖️ Close", callback_data=cb.ADMIN_CLOSE, style=STYLE_DANGER)],
@@ -564,6 +567,48 @@ def channels_admin(channels: Sequence) -> tuple[str, InlineKeyboardMarkup]:
             InlineKeyboardButton("➕ Add channel", callback_data=cb.ADMIN_ADD_CHANNEL, style=STYLE_SUCCESS),
             InlineKeyboardButton("⬅️ Back", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY),
         ]
+    )
+    return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
+
+
+def trackers_admin(patterns: Sequence) -> tuple[str, InlineKeyboardMarkup]:
+    """Learned wrapper patterns, with a one-tap undo for bad ones."""
+    if not patterns:
+        return (
+            "🧠 <b>Learned tracker patterns</b>\n\nNone yet. Turn on "
+            "<code>USE_AI_LINK_FALLBACK</code> and the bot learns click-wrapper "
+            "hosts from ambiguous mail, then filters them offline.",
+            InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "⬅️ Back", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY
+                        )
+                    ]
+                ]
+            ),
+        )
+    lines = [
+        "🧠 <b>Learned tracker patterns</b>",
+        "",
+        "Links on these hosts are treated as click wrappers and ranked last:",
+        "",
+    ]
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, pattern in enumerate(patterns, start=1):
+        origin = "AI" if pattern.source == "ai" else "admin"
+        lines.append(f"{index}. <code>{esc(pattern.pattern)}</code> <i>({origin})</i>")
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    f"🗑 Remove {clip(pattern.pattern, 24)}",
+                    callback_data=cb.remove_tracker(index - 1),
+                    style=STYLE_DANGER,
+                )
+            ]
+        )
+    rows.append(
+        [InlineKeyboardButton("⬅️ Back", callback_data=cb.ADMIN_PANEL, style=STYLE_PRIMARY)]
     )
     return clamp("\n".join(lines)), InlineKeyboardMarkup(rows)
 

@@ -40,6 +40,7 @@ ADMIN_UNBAN = "ad:unban"
 ADMIN_CHANNELS = "ad:chs"
 ADMIN_ADD_CHANNEL = "ad:addch"
 ADMIN_DEL_CHANNEL = "ad:delch"
+ADMIN_TRACKERS = "ad:trk"
 ADMIN_CLOSE = "ad:close"
 
 
@@ -100,6 +101,18 @@ def parse_remove_channel(data: str) -> str | None:
 
 def param0(params: list[str]) -> str:
     return params[0] if params else ""
+
+
+def remove_tracker(index: int) -> str:
+    """Index, not the pattern itself: host globs can be long, 64 bytes is a cap."""
+    return _join("ad", "rmtrk", index)
+
+
+def parse_remove_tracker(data: str) -> int | None:
+    action, params = parse(data)
+    if action != "ad" or param0(params) != "rmtrk" or len(params) < 2:
+        return None
+    return int(params[1]) if params[1].isdigit() else None
 
 
 def parse_view(data: str) -> tuple[str | None, int]:

@@ -125,6 +125,10 @@ class Config:
     generate_per_hour: int = 20
     openrouter_api_key: str | None = None
     use_ai_otp_fallback: bool = False
+    #: Ask the AI to classify ambiguous links and LEARN the wrapper host pattern,
+    #: so later mail is filtered offline. Only redacted URLs are ever sent.
+    use_ai_link_fallback: bool = False
+    link_judge_model: str = "openai/gpt-4o-mini"
     log_level: str = "INFO"
     brand_name: str = BRAND_NAME_DEFAULT
     brand_credit: str = BRAND_CREDIT_DEFAULT
@@ -285,6 +289,12 @@ class Config:
             use_ai_otp_fallback=str(
                 env.get("USE_AI_OTP_FALLBACK", "false")
             ).lower() in {"1", "true", "yes", "on"},
+            use_ai_link_fallback=str(
+                env.get("USE_AI_LINK_FALLBACK", "false")
+            ).lower() in {"1", "true", "yes", "on"},
+            link_judge_model=str(
+                env.get("LINK_JUDGE_MODEL", "openai/gpt-4o-mini")
+            ),
             log_level=str(env.get("LOG_LEVEL", "INFO")).upper(),
             brand_name=_get(
                 env, "BOT_BRAND_NAME", problems, required=False,

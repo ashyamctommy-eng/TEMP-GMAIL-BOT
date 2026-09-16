@@ -29,6 +29,7 @@ from pathlib import Path
 from .models import (
     Alias,
     AliasAddResult,
+    LinkPattern,
     Message,
     RequiredChannel,
     StoredMessage,
@@ -39,7 +40,7 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 #: Characters kept from a body when it is used purely for display.
 PREVIEW_CHARS = 220
@@ -98,6 +99,14 @@ CREATE TABLE IF NOT EXISTS required_channels (
     invite_link TEXT,
     added_by    INTEGER,
     added_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS link_patterns (
+    pattern  TEXT PRIMARY KEY,   -- host glob, e.g. 'url*.mail.anthropic.com'
+    kind     TEXT NOT NULL,      -- 'tracker'
+    source   TEXT NOT NULL,      -- 'ai' (learned) or 'admin' (added by hand)
+    added_at TEXT NOT NULL,
+    hits     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS meta (
@@ -551,6 +560,65 @@ class Database:
                 (user_id, text, photo_id, to_iso(utcnow())),
             )
             return int(cursor.lastrowid)
+
+    # --------------------------------------------------------- learned links
+    def add_link_pattern(
+        self, pattern: str, *, kind: str = "tracker", source: str = "ai"
+    ) -> None:
+        with self._write_lock, self.conn as conn:
+            conn.execute(
+                "INSERT INTO link_patterns (pattern, kind, source, added_at) "
+                "VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(pattern) DO UPDATE SET kind = excluded.kind",
+                (pattern.lower(), kind, source, to_iso(utcnow())),
+            )
+
+    def remove_link_pattern(self, pattern: str) -> bool:
+        with self._write_lock, self.conn as conn:
+            cursor = conn.execute(
+                "DELETE FROM link_patterns WHERE pattern = ?", (pattern.lower(),)
+            )
+            return cursor.rowcount > 0
+
+    def list_link_patterns(self, *, kind: str = "tracker") -> list[LinkPattern]:
+        rows = self.conn.execute(
+            "SELECT pattern, source, added_at FROM link_patterns WHERE kind = ? "
+            "ORDER BY added_at DESC",
+            (kind,),
+        ).fetchall()
+        return [
+            LinkPattern(
+                pattern=row["pattern"],
+                source=row["source"],
+                added_at=from_iso(row["added_at"]),
+            )
+            for row in rows
+        ]
+
+    def tracker_patterns(self) -> list[str]:
+        """Host globs the extractor should treat as click wrappers."""
+        return [
+            row["pattern"]
+            for row in self.conn.execute(
+                "SELECT pattern FROM link_patterns WHERE kind = 'tracker'"
+            )
+        ]
+
+    def note_pattern_hit(self, pattern: str) -> None:
+        with self._write_lock, self.conn as conn:
+            conn.execute(
+                "UPDATE link_patterns SET hits = hits + 1 WHERE pattern = ?",
+                (pattern.lower(),),
+            )
+
+    def update_message_links(self, message_id: int, links: list[str]) -> None:
+        """Persist a corrected link order (used to repair pre-fix rows on read)."""
+        payload = json.dumps(links, ensure_ascii=False) if links else None
+        with self._write_lock, self.conn as conn:
+            conn.execute(
+                "UPDATE messages SET verification_links = ? WHERE message_id = ?",
+                (payload, message_id),
+            )
 
     # -------------------------------------------------------- join-guard info
     def add_required_channel(

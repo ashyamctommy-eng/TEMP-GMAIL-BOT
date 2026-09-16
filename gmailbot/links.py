@@ -16,10 +16,12 @@ Fixes over the original:
 
 from __future__ import annotations
 
+import fnmatch
 import html
 import logging
 import re
 from dataclasses import dataclass
+from typing import Iterable
 from urllib.parse import parse_qs, unquote, urlparse
 
 logger = logging.getLogger(__name__)
@@ -127,7 +129,37 @@ def _clean(url: str) -> str:
     return cleaned.rstrip(">")
 
 
-def _is_tracker(url: str) -> bool:
+def learn_host_pattern(url: str) -> str | None:
+    """Generalise a host into a reusable glob: url8792.mail.x -> url*.mail.x.
+
+    Bulk senders rotate the digits per campaign, so learning the exact host
+    would mean learning nothing the next time.
+    """
+    try:
+        host = urlparse(url).netloc.lower()
+    except ValueError:
+        return None
+    if not host:
+        return None
+    labels = host.split(".")
+    generalised = [re.sub(r"\d+", "*", label) for label in labels]
+    pattern = ".".join(generalised)
+    return pattern if pattern != host or any("*" in label for label in generalised) else host
+
+
+def _matches_learned(host: str, learned: Iterable[str]) -> str | None:
+    for pattern in learned:
+        if host == pattern or fnmatch.fnmatch(host, pattern):
+            return pattern
+    return None
+
+
+def _is_tracker(url: str, learned: Iterable[str] = ()) -> bool:
+    """Is ``url`` a click wrapper?
+
+    Built-in rules are checked first, then any host pattern learned from the AI
+    judge or added by the admin (see :func:`_matches_learned`).
+    """
     try:
         parsed = urlparse(url)
     except ValueError:
@@ -138,10 +170,12 @@ def _is_tracker(url: str) -> bool:
     if _TRACKER_PATH_RE.match(parsed.path or ""):
         return True
     params = {key.lower() for key in parse_qs(parsed.query)}
-    return bool(params & set(_TRACKER_PARAMS))
+    if params & set(_TRACKER_PARAMS):
+        return True
+    return _matches_learned(host, learned) is not None
 
 
-def _score(url: str) -> int:
+def _score(url: str, learned: Iterable[str] = ()) -> int:
     score = 0
     try:
         parsed = urlparse(url)
@@ -168,7 +202,7 @@ def _score(url: str) -> int:
     # Magic links carry their token in the fragment.
     if parsed.fragment:
         score += 4
-    if _is_tracker(url):
+    if _is_tracker(url, learned):
         score -= 40
     params = parse_qs(parsed.query)
     if any(key.lower() in _TOKEN_KEYS for key in params):
@@ -184,7 +218,13 @@ def _score(url: str) -> int:
     return score
 
 
-def extract_links(text: str, *, limit: int = 10, min_score: int = 1) -> list[Link]:
+def extract_links(
+    text: str,
+    *,
+    limit: int = 10,
+    min_score: int = 1,
+    learned: Iterable[str] = (),
+) -> list[Link]:
     """Verification links first, best score first, de-duplicated, never cut."""
     if not text:
         return []
@@ -204,8 +244,8 @@ def extract_links(text: str, *, limit: int = 10, min_score: int = 1) -> list[Lin
             continue
         seen.add(cleaned)
         seen.add(unwrapped)
-        score = _score(unwrapped)
-        tracker = _is_tracker(unwrapped)
+        score = _score(unwrapped, learned)
+        tracker = _is_tracker(unwrapped, learned)
         # A tracker scores far below the floor on purpose, but it still redirects
         # to the real destination: keep it as a last-resort candidate so a mail
         # whose only URL is wrapped is not left with nothing clickable.
@@ -220,5 +260,5 @@ def extract_links(text: str, *, limit: int = 10, min_score: int = 1) -> list[Lin
     return (real or links)[:limit]
 
 
-def extract_link_urls(text: str, *, limit: int = 10) -> list[str]:
-    return [link.url for link in extract_links(text, limit=limit)]
+def extract_link_urls(text: str, *, limit: int = 10, learned: Iterable[str] = ()) -> list[str]:
+    return [link.url for link in extract_links(text, limit=limit, learned=learned)]
