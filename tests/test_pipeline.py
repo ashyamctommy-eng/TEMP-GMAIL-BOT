@@ -65,7 +65,10 @@ def test_mail_to_notification_pipeline(config, db):
     assert "<code>483920</code>" in caption
     assert "https://acme.test/verify?token=zz" in caption
     assert "New code" in caption
-    assert config.credit_line in caption, "alerts are branded too"
+    assert fmt.unstyle(fmt.credit_line(config)) in caption, "alerts are branded too"
+    assert 'href="https://t.me/Poriot_ke"' in call["caption"], (
+        "the footer is linked in push alerts too, not only in command replies"
+    )
     assert bot.messages == [], "caption fitted, so no second message is needed"
 
 
@@ -96,7 +99,7 @@ def test_plain_mail_produces_a_quiet_notification(config, db):
     asyncio.run(scenario())
     assert len(bot.messages) == 1
     assert "New email" in fmt.unstyle(bot.messages[0][1])
-    assert config.credit_line in bot.messages[0][1]
+    assert fmt.credit_line(config) in bot.messages[0][1]
     assert "483920" not in bot.messages[0][1]
     # Plain mail stays text-only; only code alerts get the image.
     assert bot.photo_calls == []

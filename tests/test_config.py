@@ -98,3 +98,9 @@ def test_dotenv_parsing_ignores_comments_and_quotes(tmp_path):
 
 def test_dotenv_is_optional(tmp_path):
     assert load_dotenv(tmp_path / "missing") == {}
+
+
+def test_dev_url_is_configurable(env):
+    assert Config.from_env(env).dev_url == "https://t.me/Poriot_ke"
+    custom = Config.from_env({**env, "DEV_URL": "https://t.me/n_ke"})
+    assert custom.dev_url == "https://t.me/n_ke"

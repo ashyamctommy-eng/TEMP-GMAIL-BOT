@@ -110,6 +110,18 @@ def style(text: object) -> str:
 S = style
 
 
+def _sans_serif_bold_italic() -> dict[str, str]:
+    """The block the credit name is written in (the hand-written "Poriot_ke").
+
+    Only :func:`unstyle` reads this: the font I *emit* stays Bold Italic, but
+    a name someone typed in the neighbouring block must still fold back to
+    ASCII when the styled font is switched off.
+    """
+    table = {chr(0x1D63C + i): chr(65 + i) for i in range(26)}
+    table.update({chr(0x1D656 + i): chr(97 + i) for i in range(26)})
+    return table
+
+
 def unstyle(text: object) -> str:
     """Inverse of :func:`style` -- back to plain ASCII.
 
@@ -118,6 +130,7 @@ def unstyle(text: object) -> str:
     bijection (see the round-trip test).
     """
     reverse = {styled: plain for plain, styled in _BOLD_ITALIC.items()}
+    reverse.update(_sans_serif_bold_italic())
     return "".join(reverse.get(character, character) for character in str(text))
 
 
@@ -178,14 +191,26 @@ def clamp(text: str, limit: int = TELEGRAM_TEXT_LIMIT) -> str:
 
 
 def credit_line(config) -> str:
-    return config.credit_line
+    """The footer, with the dev name clickable through to their Telegram.
+
+    ``config.credit_line`` stays the plain string, because the Bot API description
+    field accepts no markup; the linked form is built here, next to the rest of the
+    formatting, and only an escaped URL is ever interpolated into the attribute.
+    """
+    name = str(getattr(config, "brand_credit", "") or "")
+    if not _STYLED_FONT:
+        name = unstyle(name)
+    url = esc_attr(getattr(config, "dev_url", "") or "")
+    if not url:
+        return f"Bot by: {name}"
+    return f'Bot by: <a href="{url}">{name}</a>'
 
 
 def brand_caption(config) -> str:
     """Short caption used when the full message will not fit in a caption."""
     return (
         f"<b>{esc(config.brand_name)}</b>\n\n"
-        f"<i>New message below ↓</i>\n\n{esc(config.credit_line)}"
+        f"<i>New message below ↓</i>\n\n{credit_line(config)}"
     )
 
 
@@ -196,8 +221,9 @@ def finalize(text: str, config, *, limit: int = TELEGRAM_TEXT_LIMIT) -> str:
     message over Telegram's limit, and it is never appended twice.
     """
     body = (text or "").rstrip()
-    mark = config.credit_line
-    if mark and mark in body:
+    mark = credit_line(config)
+    plain = config.credit_line
+    if (plain and plain in body) or (mark and mark in body):
         return clamp(body, limit=limit)
     foot = f"\n\n{mark}" if mark else ""
     room = max(limit - utf16_len(foot), 1)

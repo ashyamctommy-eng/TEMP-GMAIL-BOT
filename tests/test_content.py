@@ -252,16 +252,16 @@ def test_clamp_never_cuts_inside_a_tag():
 
 def test_finalize_appends_the_credit_footer_once(config):
     once = fmt.finalize("Hello", config)
-    assert once.endswith(config.credit_line)
+    assert once.endswith(fmt.credit_line(config))
     twice = fmt.finalize(once, config)
     assert twice == once
-    assert twice.count(config.credit_line) == 1
+    assert twice.count(fmt.credit_line(config)) == 1
 
 
 def test_finalize_budgets_the_footer_inside_the_limit(config):
     huge = fmt.finalize("<b>" + "𝒙" * 4000, config)
     assert fmt.utf16_len(huge) <= fmt.TELEGRAM_TEXT_LIMIT
-    assert config.credit_line in huge, "branding must survive clamping"
+    assert fmt.credit_line(config) in huge, "branding must survive clamping"
 
 
 def test_clamp_counts_utf16_units_not_code_points(config):
@@ -282,7 +282,7 @@ def test_clamp_for_caption_never_truncates_a_code(config):
     assert overflow is not None
     assert "483920" in overflow
     assert fmt.utf16_len(caption) <= fmt.CAPTION_LIMIT
-    assert config.credit_line in caption
+    assert fmt.credit_line(config) in caption
 
 
 def test_duration_wording():
@@ -440,3 +440,58 @@ def test_brand_font_can_be_switched_off():
     finally:
         configure(styled_font=True)
     assert fmt.style("Temp") == "𝑻𝒆𝒎𝒑"
+
+
+# ------------------------------------------------------------- credit footer
+def test_credit_footer_links_the_dev_name(config):
+    footer = fmt.credit_line(config)
+    assert footer.startswith("Bot by: ")
+    assert 'href="https://t.me/Poriot_ke"' in footer, "the credit must be clickable"
+    assert config.brand_credit in footer, "the visible text stays the brand name"
+
+    text = fmt.finalize("New code: <code>1</code>", config)
+    assert text.endswith(footer), "every message carries the linked footer"
+
+
+def test_credit_footer_uses_the_configured_target(config):
+    from dataclasses import replace
+
+    custom = replace(config, dev_url="https://t.me/someone_else")
+    assert 'href="https://t.me/someone_else"' in fmt.credit_line(custom)
+
+
+def test_credit_footer_survives_a_hostile_url(config):
+    from dataclasses import replace
+
+    hostile = replace(config, dev_url='https://t.me/x"><b>injected</b>')
+    footer = fmt.credit_line(hostile)
+    assert "><b>injected" not in footer.replace("&quot;", '"'), (
+        "the attribute value must be escaped, not interpolated raw"
+    )
+    assert footer.count("<a href=") == 1
+
+
+def test_credit_footer_is_appended_only_once(config):
+    once = fmt.finalize("hello", config)
+    assert once.count(fmt.credit_line(config)) == 1
+    twice = fmt.finalize(once, config)
+    assert twice.count(fmt.credit_line(config)) == 1, "finalize must be idempotent"
+
+
+def test_credit_name_folds_to_ascii_without_the_font(config):
+    """The hand-written name uses a neighbouring block; it must still decode."""
+    assert fmt.unstyle(config.brand_credit) == "Poriot_ke"
+    from gmailbot.formatting import configure
+
+    try:
+        configure(styled_font=False)
+        assert "Poriot_ke" in fmt.credit_line(config)
+        assert fmt.style("Temp Gmail Bot") == "Temp Gmail Bot"
+    finally:
+        configure(styled_font=True)
+
+
+def test_the_bot_description_keeps_the_plain_footer(config):
+    """The Bot API description field takes no markup -- it must not get HTML."""
+    assert "<" not in config.credit_line
+    assert config.credit_line == f"Bot by: {config.brand_credit}"

@@ -25,6 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 #: config, not code, so they can be swapped for plain text in one place.
 BRAND_NAME_DEFAULT = "𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕"
 BRAND_CREDIT_DEFAULT = "𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚"
+DEV_URL_DEFAULT = "https://t.me/Poriot_ke"
 BRAND_PHOTO_DEFAULT = PROJECT_ROOT / "gmailbot" / "assets" / "tempgmail.jpg"
 
 #: A Telegram bot token looks like ``123456789:AA...``
@@ -132,6 +133,8 @@ class Config:
     log_level: str = "INFO"
     brand_name: str = BRAND_NAME_DEFAULT
     brand_credit: str = BRAND_CREDIT_DEFAULT
+    #: Where the credit name in the footer points. Clicking it opens this chat.
+    dev_url: str = DEV_URL_DEFAULT
     brand_photo: Path | None = BRAND_PHOTO_DEFAULT
     send_brand_photo: bool = True
     #: Require users to join the configured channels before the bot responds.
@@ -302,6 +305,9 @@ class Config:
                 env, "BOT_BRAND_NAME", problems, required=False,
                 default=BRAND_NAME_DEFAULT,
             ) or BRAND_NAME_DEFAULT,
+            dev_url=_get(
+                env, "DEV_URL", problems, required=False, default=DEV_URL_DEFAULT,
+            ) or DEV_URL_DEFAULT,
             brand_credit=_get(
                 env, "BOT_CREDIT", problems, required=False,
                 default=BRAND_CREDIT_DEFAULT,

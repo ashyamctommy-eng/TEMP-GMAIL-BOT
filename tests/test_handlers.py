@@ -78,7 +78,7 @@ def test_start_shows_welcome_and_menu(handlers, bot, config):
     assert config.brand_name in last.text
     assert last.parse_mode == "HTML"
     assert last.markup is not None
-    assert config.credit_line in last.text
+    assert fmt.credit_line(config) in last.text
 
 
 def test_start_attaches_the_brand_photo(handlers, bot, config):
@@ -87,7 +87,7 @@ def test_start_attaches_the_brand_photo(handlers, bot, config):
     last = update.effective_message.last
     assert last.photo and last.photo.endswith("tempgmail.jpg")
     # The caption carries the whole message: nothing is dropped for the image.
-    assert config.brand_name in last.text and config.credit_line in last.text
+    assert config.brand_name in last.text and fmt.credit_line(config) in last.text
 
 
 def test_otp_command_attaches_the_brand_photo(handlers, bot, db, config):
@@ -134,8 +134,8 @@ def test_every_user_facing_message_carries_the_credit_footer(handlers, bot, db, 
         update, context = make_command_update(name, args, bot=bot) if typed is None else make_text_update(typed, bot=bot)
         run(getattr(handlers, name)(update, context))
         for sent in update.effective_message.sent:
-            assert config.credit_line in sent.text, f"{name} reply is missing the footer"
-            assert sent.text.count(config.credit_line) == 1, f"{name} footer duplicated"
+            assert fmt.credit_line(config) in sent.text, f"{name} reply is missing the footer"
+            assert sent.text.count(fmt.credit_line(config)) == 1, f"{name} footer duplicated"
             checked += 1
     assert checked >= len(steps)
 
@@ -159,7 +159,7 @@ def test_long_otp_message_becomes_caption_plus_full_message(handlers, bot, db, c
     assert text_sends, "expected the full message after the photo"
     # The overflow message still contains the codes and the footer.
     assert any("<code>700004</code>" in sent.text for sent in text_sends)
-    assert all(config.credit_line in sent.text for sent in text_sends)
+    assert all(fmt.credit_line(config) in sent.text for sent in text_sends)
 
 
 def test_every_reply_uses_html_parse_mode(handlers, bot, db):
@@ -642,7 +642,7 @@ def test_alert_offers_one_tap_open_and_copy(handlers, bot, db):
     assert copy_button.callback_data.endswith(":link")
 
 
-def test_copy_button_replies_with_only_the_url(handlers, bot, db):
+def test_copy_button_replies_with_only_the_url(handlers, bot, db, config):
     db.add_alias(7, "claude")
     stored = db.add_message("claude", "Secure link", "body", links=[MAGIC])
     update, context, query = make_callback_update(f"s:{stored.message_id}:link", bot=bot)
@@ -653,4 +653,5 @@ def test_copy_button_replies_with_only_the_url(handlers, bot, db):
     assert f"<code>{MAGIC}</code>" in reply
     # nothing to select around it
     assert "<http" not in reply
-    assert reply.count("http") == 1
+    body = reply.split(fmt.credit_line(config))[0]
+    assert body.count("http") == 1, "only the link itself -- no wrapper or tracker URL"

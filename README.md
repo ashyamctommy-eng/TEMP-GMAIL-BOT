@@ -98,6 +98,9 @@ Telegram client from February 2026 or newer; older ones draw their default colou
 which is why every label also reads on its own. `STYLED_FONT=false` turns the font
 off if a client shows boxes instead of letters.
 
+The footer's name is a live link: tapping **𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚** opens my Telegram. Point it
+somewhere else with `DEV_URL`, or set it empty to leave the footer as plain text.
+
 ## Settings
 
 Everything is env config — I never hardcode it.
@@ -122,6 +125,7 @@ Everything is env config — I never hardcode it.
 | `BOT_CREDIT` | `𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚` | rendered as `Bot by: …` on every message |
 | `BOT_PHOTO_PATH` / `SEND_BRAND_PHOTO` | bundled image / `true` | photo on `/start` and OTP alerts |
 | `STYLED_FONT` | `true` | brand font on the bot's own text (off = plain ASCII) |
+| `DEV_URL` | `https://t.me/Poriot_ke` | where the credit name in the footer links to |
 | `OPENROUTER_API_KEY` | empty | key for the optional AI helpers below |
 | `USE_AI_LINK_FALLBACK` | `false` | let the AI spot unknown click wrappers, then remember the host pattern |
 | `LINK_JUDGE_MODEL` | `openai/gpt-4o-mini` | model used for that classification |
