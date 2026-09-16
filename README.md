@@ -117,6 +117,8 @@ Everything is env config — I never hardcode it.
 | `POLL_INTERVAL_SECONDS` | `10` | IMAP poll interval |
 | `INITIAL_LOOKBACK_DAYS` | `1` | how far back the first poll looks |
 | `MAX_ALIASES_PER_USER` / `GENERATE_PER_HOUR` | `25` / `20` | per-user limits |
+| `ALIAS_ROOT` / `ALIAS_DOMAIN` | your address | the alias scheme: `root+{alias}@domain`, e.g. `you` + `gmail.com` (both derived from `GMAIL_EMAIL` if unset) |
+| `IMAP_HOST` | `imap.gmail.com` | change only if you are not on Gmail |
 | `IMAP_MAILBOX` | `INBOX` | set `[Gmail]/All Mail` if a filter archives alias mail |
 | `FORCE_JOIN` | `true` | require channel membership before the bot answers |
 | `REQUIRED_CHANNELS` | empty | seed list, comma-separated: `@nativecodes,-1001234567890` (the `@` is optional; then manage with `/addchannel`) |
@@ -126,6 +128,7 @@ Everything is env config — I never hardcode it.
 | `BOT_PHOTO_PATH` / `SEND_BRAND_PHOTO` | bundled image / `true` | photo on `/start` and OTP alerts |
 | `STYLED_FONT` | `true` | brand font on the bot's own text (off = plain ASCII) |
 | `DEV_URL` | `https://t.me/Poriot_ke` | where the credit name in the footer links to |
+| `LOG_LEVEL` | `INFO` | `DEBUG` when something is not arriving |
 | `OPENROUTER_API_KEY` | empty | key for the optional AI helpers below |
 | `USE_AI_LINK_FALLBACK` | `false` | let the AI spot unknown click wrappers, then remember the host pattern |
 | `LINK_JUDGE_MODEL` | `openai/gpt-4o-mini` | model used for that classification |

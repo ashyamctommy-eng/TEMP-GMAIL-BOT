@@ -92,3 +92,53 @@ def test_python_version_is_pinned(path: Path):
     value = path.read_text().strip()
     assert re.fullmatch(r"3\.(1[0-9])", value), value
     assert int(value.split(".")[1]) >= 10  # the code uses PEP 604 unions
+
+
+# ------------------------------------------------- README stays in sync
+def _env_vars_read_by_the_code() -> set[str]:
+    import re
+
+    code = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (ROOT / "gmailbot").glob("*.py")
+    )
+    found = set(re.findall(r'env\.get\(\s*"([A-Z0-9_]+)"', code))
+    found |= set(re.findall(r'_get(?:_int)?\(\s*env,\s*"([A-Z0-9_]+)"', code))
+    found |= set(re.findall(r'env\[\s*"([A-Z0-9_]+)"\s*\]', code))
+    return found
+
+
+def test_every_setting_is_documented_in_the_readme():
+    """A var the code reads but nothing documents is a support ticket waiting."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    table = readme.split("## Settings", 1)[1].split("\n## ", 1)[0]
+    documented = set(re.findall(r"`([A-Z][A-Z0-9_]+)`", table))
+
+    missing = _env_vars_read_by_the_code() - documented
+    assert not missing, f"missing from the README settings table: {sorted(missing)}"
+
+
+def test_every_setting_is_in_the_example_env():
+    example = (ROOT / ".env.example").read_text(encoding="utf-8")
+    listed = set(re.findall(r"^#?\s*([A-Z0-9_]+)=", example, re.M))
+    missing = _env_vars_read_by_the_code() - listed
+    assert not missing, f"missing from .env.example: {sorted(missing)}"
+
+
+def test_readme_documents_every_advertised_command():
+    """The command table is what people read; it has to match the menu."""
+    from gmailbot.app import ADMIN_COMMANDS, COMMANDS
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    table = readme.split("## Commands", 1)[1].split("\n## ", 1)[0]
+    for command in (*COMMANDS, *ADMIN_COMMANDS):
+        assert f"`/{command.command}`" in table or f"`/{command.command} " in table, (
+            f"/{command.command} is advertised to Telegram but missing from the README"
+        )
+
+
+def test_readme_documents_the_long_command_aliases():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    table = readme.split("## Commands", 1)[1].split("\n## ", 1)[0]
+    for alias in ("generate", "otp", "history", "view", "delete", "feedback"):
+        assert f"`/{alias}`" in table, f"the /{alias} alias is undocumented"
