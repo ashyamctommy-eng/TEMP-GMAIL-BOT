@@ -149,3 +149,38 @@ def test_notifier_buffers_until_ready(config):
         )
     notifier.emit(stored)  # before bind(): must be buffered, not dropped
     assert len(notifier._buffered) == 1
+
+
+def test_link_only_mail_is_headlined_as_a_link_not_a_code(config, db):
+    db.add_alias(1, "claude")
+    mailbox = FakeMailbox()
+    mailbox.add(
+        1,
+        make_raw_email(
+            to="owner+claude@gmail.com",
+            subject="Your secure link to Claude.ai is here",
+            body="Log in: https://claude.ai/magic-link#tok",
+            message_id="<magic@claude.ai>",
+        ),
+    )
+    bot = FakeBot()
+
+    async def scenario():
+        class FakeApplication:
+            def __init__(self) -> None:
+                self.bot = bot
+
+        notifier = Notifier(build_notification(config))
+        notifier.bind(asyncio.get_running_loop(), FakeApplication())
+        notifier.start()
+        GmailPoller(
+            config, db, on_message=notifier.emit,
+            client_factory=lambda host: FakeImap(mailbox), sleep=lambda seconds: None,
+        ).run_once()
+        await asyncio.sleep(0.05)
+        await notifier.stop()
+
+    asyncio.run(scenario())
+    text = bot.photo_calls[0]["caption"] if bot.photo_calls else bot.messages[0][1]
+    assert "New link" in text and "New code" not in text
+    assert "https://claude.ai/magic-link#tok" in text

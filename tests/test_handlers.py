@@ -617,3 +617,39 @@ def test_verify_button_unlocks_the_bot(handlers, bot, db):
     run(handlers.on_callback(update2, context2))
     assert "verified" in str(query2.answers[0]).lower()
     assert query2.edits and "TempGail" or "𝑻𝒆𝒎𝒑" in query2.edits[-1].text
+
+
+# ------------------------------------------------- magic link copy/open UX
+MAGIC = ("https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:"
+         "d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==")
+
+
+def test_alert_offers_one_tap_open_and_copy(handlers, bot, db):
+    """No more select-and-edit: a URL button opens it, the other copies it."""
+    db.add_alias(7, "claude")
+    stored = db.add_message("claude", "Your secure link to Claude.ai is here", "body",
+                            links=[MAGIC])
+    update, context = make_command_update("otp", bot=bot)
+    run(handlers.otp(update, context))
+    markup = update.effective_message.last.markup
+    buttons = [b for row in markup.inline_keyboard for b in row]
+
+    open_button = next(b for b in buttons if b.url)
+    assert open_button.url == MAGIC, "the open button must point at the magic link"
+    assert "claude.ai" in open_button.text
+    copy_button = next(b for b in buttons if b.callback_data == f"s:{stored.message_id}:link")
+    assert copy_button.callback_data.endswith(":link")
+
+
+def test_copy_button_replies_with_only_the_url(handlers, bot, db):
+    db.add_alias(7, "claude")
+    stored = db.add_message("claude", "Secure link", "body", links=[MAGIC])
+    update, context, query = make_callback_update(f"s:{stored.message_id}:link", bot=bot)
+    run(handlers.on_callback(update, context))
+
+    payloads = [edit.text for edit in query.edits] + [m.text for m in update.effective_message.sent]
+    reply = next(p for p in payloads if "Verification link" in p)
+    assert f"<code>{MAGIC}</code>" in reply
+    # nothing to select around it
+    assert "<http" not in reply
+    assert reply.count("http") == 1

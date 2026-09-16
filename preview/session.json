@@ -14,7 +14,7 @@
     "banned": 0,
     "aliases": 1,
     "active_aliases": 1,
-    "messages": 4,
+    "messages": 5,
     "feedback": 1
   },
   "events": [
@@ -119,7 +119,8 @@
       "text": "🔔 <b>New code</b>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔗 Full link"
+          "🔓 Open id.acme.example",
+          "📋 Copy link"
         ],
         [
           "👀 View messages",
@@ -168,22 +169,49 @@
     },
     {
       "chat": "user",
+      "role": "out",
+      "text": "🔔 <b>New link</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n⏰ Kept for 1 hour.\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "buttons": [
+        [
+          "🔓 Open claude.ai",
+          "📋 Copy link"
+        ],
+        [
+          "👀 View messages",
+          "🔑 All OTPs"
+        ]
+      ],
+      "note": "push alert (mail poller) + brand photo",
+      "photo": "/home/user/.workspace/projects/gmailbot/gmailbot/assets/tempgmail.jpg"
+    },
+    {
+      "chat": "user",
       "role": "in",
       "text": "/otp"
     },
     {
       "chat": "user",
       "role": "out",
-      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "<b>𝑻𝒆𝒎𝒑 𝑮𝒎𝒂𝒊𝒍 𝑩𝒐𝒕</b>\n\n<i>New message below ↓</i>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "photo": "/home/user/.workspace/projects/gmailbot/gmailbot/assets/tempgmail.jpg"
+    },
+    {
+      "chat": "user",
+      "role": "out",
+      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔗 Full link"
+          "🔓 Open claude.ai",
+          "📋 Copy link"
+        ],
+        [
+          "🔓 Open id.acme.example",
+          "📋 Copy link"
         ],
         [
           "💬 Feedback"
         ]
-      ],
-      "photo": "/home/user/.workspace/projects/gmailbot/gmailbot/assets/tempgmail.jpg"
+      ]
     },
     {
       "chat": "user",
@@ -193,10 +221,15 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📧 <b>safeemerald</b> — 4 message(s)\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📧 <b>safeemerald</b> — 5 message(s)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔗 Full link"
+          "🔓 Open claude.ai",
+          "📋 Copy link"
+        ],
+        [
+          "🔓 Open id.acme.example",
+          "📋 Copy link"
         ],
         [
           "🔄 Refresh",
@@ -232,10 +265,15 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "📧 <b>safeemerald</b> — 4 message(s)\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "📧 <b>safeemerald</b> — 5 message(s)\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 <i>Claude &lt;no-reply@anthropic.com&gt;</i>\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 <i>Globex &lt;security@globex.example&gt;</i>\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Your Northwind order 5691 has shipped</b> <i>11:00 UTC</i>\n👤 <i>Northwind &lt;orders@northwind.example&gt;</i>\n<pre>Order 5691 is on its way to 90210. Total: $49.99. Tracking: https://northwind.example/track/5691</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 <i>Vaultly &lt;hello@vaultly.example&gt;</i>\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 <i>Acme ID &lt;no-reply@acme.example&gt;</i>\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔗 Full link"
+          "🔓 Open claude.ai",
+          "📋 Copy link"
+        ],
+        [
+          "🔓 Open id.acme.example",
+          "📋 Copy link"
         ],
         [
           "🔄 Refresh",
@@ -251,10 +289,15 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🔑 <b>Recent codes</b>\n\n📨 <b>Your secure link to Claude.ai is here</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔗 <a href=\"https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==\">claude.ai</a>\n<pre>Your secure link to Claude.ai is here Log in to Claude &lt;https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==&gt; Or click here &lt;https://url8792.mail.anthropic.com/ls/cl…</pre>\n\n📨 <b>Your Globex sign-in code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>123456</code>\n<pre>Your Globex code is 123-456. Never share it with anyone.</pre>\n\n📨 <b>Confirm your email address</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>918273</code>\n<pre>Welcome to Vaultly! Use code 918273 to confirm your address.</pre>\n\n📨 <b>Your Acme ID verification code</b> <i>11:00 UTC</i>\n👤 safeemerald\n🔑 OTP: <code>483920</code>\n🔗 <a href=\"https://id.acme.example/verify?token=8f3a91&amp;continue=1\">id.acme.example</a>\n<pre>Your Acme ID verification code is 483920. Enter it to finish signing in. It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. Verify now: https://id.acme.example/verify?token=8f3a91&amp;continu…</pre>\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
-          "🔗 Full link"
+          "🔓 Open claude.ai",
+          "📋 Copy link"
+        ],
+        [
+          "🔓 Open id.acme.example",
+          "📋 Copy link"
         ],
         [
           "💬 Feedback"
@@ -322,7 +365,7 @@
     {
       "chat": "admin",
       "role": "out",
-      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 4\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 5\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
           "📊 Stats",
@@ -353,7 +396,7 @@
     {
       "chat": "user",
       "role": "out",
-      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 4\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
+      "text": "🛠 <b>Admin panel</b>\n\n👥 Users: 1 (0 banned)\n📧 Aliases: 1 (1 active)\n✉️ Messages: 5\n📣 Required channels: 1\n\nBot by: 𝙋𝙤𝙧𝙞𝙤𝙩_𝙠𝙚",
       "buttons": [
         [
           "📊 Stats",

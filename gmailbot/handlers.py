@@ -969,11 +969,12 @@ class BotHandlers:
                 fmt.error("That code is no longer available (it may have expired)."),
             )
             return
-        label = "🔑 OTP" if field == "otp" else "🔗 Verification link"
-        await self._reply(
-            update,
-            fmt.secret_reveal(label, value, "Tap the value to copy it."),
-        )
+        if field == "otp":
+            await self._reply(
+                update, fmt.secret_reveal("🔑 OTP", value, "Tap the code to copy it.")
+            )
+        else:
+            await self._reply(update, fmt.link_copy(value))
 
     async def _finish_pending(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, action: str, value: str

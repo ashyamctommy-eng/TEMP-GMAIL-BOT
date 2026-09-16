@@ -12,21 +12,23 @@ with a join prompt and nothing else. I manage that list from inside Telegram.
 ## Screenshots
 
 <p align="center">
-  <img src="preview/shots/01-start.png" width="175" alt="Welcome screen">
-  <img src="preview/shots/02-alias-ready.png" width="175" alt="New alias">
-  <img src="preview/shots/03-otp-alert.png" width="175" alt="OTP alert">
-  <img src="preview/shots/04-codes-list.png" width="175" alt="Recent codes">
+  <img src="preview/shots/07-join-gate.png" width="235" alt="Force-join gate">
+  <img src="preview/shots/01-start.png" width="235" alt="Welcome screen">
+  <img src="preview/shots/02-alias-ready.png" width="235" alt="New alias">
 </p>
 <p align="center">
-  <img src="preview/shots/05-messages.png" width="175" alt="Messages for an alias">
-  <img src="preview/shots/06-feedback-channel.png" width="175" alt="Feedback channel">
-  <img src="preview/shots/07-join-gate.png" width="175" alt="Force-join gate">
-  <img src="preview/shots/08-admin-panel.png" width="175" alt="Admin panel">
+  <img src="preview/shots/03-otp-alert.png" width="235" alt="OTP alert">
+  <img src="preview/shots/09-claude-magic-link.png" width="235" alt="Magic link with one-tap Open">
+  <img src="preview/shots/04-codes-list.png" width="235" alt="Recent codes">
+</p>
+<p align="center">
+  <img src="preview/shots/05-messages.png" width="235" alt="Messages for an alias">
+  <img src="preview/shots/06-feedback-channel.png" width="235" alt="Feedback channel">
+  <img src="preview/shots/08-admin-panel.png" width="235" alt="Admin panel">
 </p>
 
 Rendered from the bot's own output (`preview/preview.png` = full session), not
-mockups: join gate, welcome, alias, OTP alert, codes, messages, feedback channel,
-admin panel. They show rendering and logic — a live run proves your credentials.
+mockups. They show rendering and logic — a live run proves your credentials.
 
 ## Quick start
 

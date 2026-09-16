@@ -34,6 +34,7 @@ SHOTS: list[tuple[str, str]] = [
     ("06-feedback-channel", "Feedback ID"),
     ("07-join-gate", "Join required"),
     ("08-admin-panel", "Admin panel"),
+    ("09-claude-magic-link", "secure link to Claude.ai"),
 ]
 
 # Squeeze the desktop preview layout down to phone width for the screenshots.

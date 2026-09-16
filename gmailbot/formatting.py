@@ -318,7 +318,9 @@ def _entry_body(message: Message) -> list[str]:
         host = esc(_host_of(first))
         lines.append(f'🔗 <a href="{esc_attr(first)}">{host}</a>')
         if len(message.links) > 1:
-            lines.append(f"<i>+{len(message.links) - 1} more link(s)</i>")
+            lines.append(
+                f"<i>+{len(message.links) - 1} more link(s) — open buttons below</i>"
+            )
     if message.body:
         lines.append(pre(clip(message.body, BODY_PREVIEW_CHARS)))
     return lines
@@ -329,18 +331,49 @@ def _host_of(url: str) -> str:
     return without_scheme.split("/", 1)[0]
 
 
+def _link_row(message: Message) -> list[InlineKeyboardButton]:
+    """Open the link in one tap, or copy it in one tap.
+
+    A URL button hands the link to Telegram itself, so magic links need no
+    select-and-edit dance -- which was the whole complaint. The copy button
+    sends the same URL inside <code> for clients/people who want it on the
+    clipboard.
+    """
+    links = list(message.links)
+    if not links:
+        return []
+    primary = links[0]
+    row = [
+        InlineKeyboardButton(
+            f"🔓 Open {clip(_host_of(primary), 20)}",
+            url=primary,
+            style=STYLE_PRIMARY,
+        ),
+        InlineKeyboardButton(
+            "📋 Copy link", callback_data=cb.reveal_secret(message.id, "link"),
+            style=STYLE_SUCCESS,
+        ),
+    ]
+    return row
+
+
 def _secret_buttons(messages: Sequence[Message]) -> list[list[InlineKeyboardButton]]:
     rows: list[list[InlineKeyboardButton]] = []
     for message in messages:
-        row: list[InlineKeyboardButton] = []
-        if message.links:
-            row.append(
-                InlineKeyboardButton(
-                    "🔗 Full link", callback_data=cb.reveal_secret(message.id, "link")
-                )
-            )
+        row = _link_row(message)
         if row:
             rows.append(row)
+        # Additional links in the same mail get their own open buttons (max 3).
+        for extra in list(message.links)[1:3]:
+            rows.append(
+                [
+                    InlineKeyboardButton(
+                        f"🔗 Open {clip(_host_of(extra), 20)}",
+                        url=extra,
+                        style=STYLE_PRIMARY,
+                    )
+                ]
+            )
     return rows
 
 
@@ -422,6 +455,15 @@ def alias_messages(
 
 def secret_reveal(label: str, value: str, action_hint: str) -> str:
     return f"{label}\n{code(value)}\n\n<i>{esc(action_hint)}</i>"
+
+
+def link_copy(value: str) -> str:
+    """Shown after pressing Copy link: the whole URL, tappable, nothing else."""
+    return (
+        "📋 <b>Verification link</b>\n"
+        f"{code(value)}\n\n"
+        "<i>Tap the link above to copy it.</i>"
+    )
 
 
 def feedback_prompt() -> str:
@@ -535,19 +577,14 @@ def notice(message: str) -> str:
 
 
 def otp_notification(config, message: Message) -> tuple[str, InlineKeyboardMarkup]:
-    """Heads-up sent when new mail with a code arrives."""
-    lines = ["🔔 <b>New code</b>\n", _entry_header(message)]
+    """Heads-up sent when new mail with a code (or just a magic link) arrives."""
+    headline = "New code" if message.otp else "New link"
+    lines = [f"🔔 <b>{headline}</b>\n", _entry_header(message)]
     lines.append(f"👤 {esc(message.alias)}")
     lines.extend(_entry_body(message))
     rows: list[list[InlineKeyboardButton]] = []
     if message.links:
-        rows.append(
-            [
-                InlineKeyboardButton(
-                    "🔗 Full link", callback_data=cb.reveal_secret(message.id, "link")
-                )
-            ]
-        )
+        rows.append(_link_row(message))
     rows.append(
         [
             InlineKeyboardButton(

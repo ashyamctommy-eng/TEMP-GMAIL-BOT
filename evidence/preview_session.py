@@ -256,6 +256,25 @@ def main() -> int:
         ),
     )
     mailbox.add(
+        5,
+        make_raw_email(
+            to=address,
+            subject="Your secure link to Claude.ai is here",
+            body="",
+            html=(
+                "<html><body><p>Your secure link to Claude.ai is here</p>"
+                '<p><a href="https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:'
+                'd2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ==">Log in to Claude</a></p>'
+                '<p><a href="https://url8792.mail.anthropic.com/ls/click?upn=u001.rFcAmKXLOm9u6wLR'
+                'WHIUYc0QkMTx61-2B0VNcZthi30myKv6o-2B8Z7eE-2FQ-3D-3D">Or click here</a></p>'
+                '<p style="color:#888">If you did not request this link, ignore this email.</p>'
+                "</body></html>"
+            ),
+            message_id="<magic@claude.ai>",
+            sender="Claude <no-reply@anthropic.com>",
+        ),
+    )
+    mailbox.add(
         4,
         make_raw_email(
             to=address,

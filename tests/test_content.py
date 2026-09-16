@@ -59,6 +59,78 @@ def test_verification_links_rank_first():
     assert links[0].url.startswith("https://acme.test/confirm")
 
 
+# -------------------------------------------- magic links vs click trackers
+ANTHROPIC_MAGIC_LINK = (
+    "https://claude.ai/magic-link#34a2fff8c71e4bfd2cbaf46f4271d5af:"
+    "d2lsZHBoYXJtdGVjaDkrY2xhdWRlQGdtYWlsLmNvbQ=="
+)
+MAILCHIMP_CLICK_TRACKER = (
+    "https://url8792.mail.anthropic.com/ls/click?upn=u001.rFcAmKXLOm9u6wLRWHIUYc0QkMTx61-"
+    "2B0VNcZthi30myKv6o-2B8Z7eE-2FQ-3D-3D"
+)
+
+
+def test_click_tracker_does_not_outrank_the_magic_link():
+    """Real mail: the tracker used to win 7-6 because "click" scored points."""
+    body = (
+        f"Claude <{ANTHROPIC_MAGIC_LINK}> <{MAILCHIMP_CLICK_TRACKER}> "
+        "If you did not request this link, ignore this email."
+    )
+    links = extract_links(body)
+    assert links, "the magic link must survive"
+    assert links[0].url == ANTHROPIC_MAGIC_LINK
+    assert links[0].host == "claude.ai"
+    assert links[0].tracker is False
+
+
+def test_tracker_is_hidden_when_a_real_link_exists():
+    body = f"{MAILCHIMP_CLICK_TRACKER} {ANTHROPIC_MAGIC_LINK}"
+    urls = extract_link_urls(body)
+    assert urls == [ANTHROPIC_MAGIC_LINK]
+
+
+def test_tracker_is_kept_when_it_is_all_the_mail_has():
+    """Better to show a wrapped link than nothing at all."""
+    urls = extract_link_urls(f"Click here {MAILCHIMP_CLICK_TRACKER}")
+    assert urls == [MAILCHIMP_CLICK_TRACKER]
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        MAILCHIMP_CLICK_TRACKER,
+        "https://click.example.com/ls/click?upn=abc",
+        "https://email.example.com/e/c/abc123",
+        "https://example.createsend.com/t/c/abc",
+        "https://example.com/verify?mkt_tok=abc",
+    ],
+)
+def test_trackers_are_recognised(url):
+    from gmailbot.links import _is_tracker
+
+    assert _is_tracker(url) is True
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        ANTHROPIC_MAGIC_LINK,
+        "https://acme.test/verify?token=xyz",
+        "https://accounts.example.com/confirm?code=9",
+        "https://example.com/blog/post",
+    ],
+)
+def test_real_links_are_not_mistaken_for_trackers(url):
+    from gmailbot.links import _is_tracker
+
+    assert _is_tracker(url) is False
+
+
+def test_magic_link_beats_a_plain_verify_link():
+    body = "https://acme.test/verify?token=abc https://claude.ai/magic-link#tok"
+    assert extract_link_urls(body)[0].endswith("#tok")
+
+
 # ----------------------------------------------------------------- aliases
 def test_every_format_is_reachable():
     generator = AliasGenerator(rng=random.Random(7))

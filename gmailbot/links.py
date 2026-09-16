@@ -28,12 +28,32 @@ _URL_RE = re.compile(r"https?://[^\s<>\"'`\]\)}]+", re.IGNORECASE)
 _HREF_RE = re.compile(r"""href\s*=\s*["']?([^"'\s>]+)""", re.IGNORECASE)
 _ANGLE_RE = re.compile(r"<((?:https?)://[^>]+)>", re.IGNORECASE)
 
+#: "click" is deliberately absent: it made Mailchimp-style click trackers
+#: (``/ls/click?upn=…``) outrank the actual magic link they wrap.
 _VERIFY_WORDS = (
     "verify", "verification", "confirm", "confirmation", "activate", "activation",
     "auth", "authenticate", "login", "log-in", "signin", "sign-in", "magic",
-    "token", "code", "otp", "click", "redirect", "continue", "proceed", "access",
+    "token", "code", "otp", "redirect", "continue", "proceed", "access",
     "reset", "recover", "unlock", "validate", "accept", "invitation", "join",
 )
+
+#: Links whose whole purpose is to be clicked through to somewhere else. The
+#: destination is the link the user wants, so these are ranked last and hidden
+#: when a real link is present.
+_TRACKER_HOST_RE = re.compile(
+    r"(?:^|\.)url\d+\.[a-z0-9.-]+$"            # url8792.mail.anthropic.com
+    r"|(?:^|\.)(?:list-manage\.com|mailchi\.mp|sendgrid\.net|mandrillapp\.com"
+    r"|mailgun\.org|sparkpostmail\.com|amazonses\.com|postmarkapp\.com"
+    r"|hubspotlinks\.com|hubspotemail\.net|customeriomail\.com|braze\.com"
+    r"|createsend\.com|cmail\d*\.[a-z0-9.-]+)$",
+    re.IGNORECASE,
+)
+_TRACKER_PATH_RE = re.compile(
+    r"^/(?:ls/click|e/c/|track/click|t/c/|wf/click|click/|cl0/)", re.IGNORECASE
+)
+_TRACKER_PARAMS = ("upn", "mkt_tok", "_hsenc", "_hsmi", "vero_id", "sc_cid")
+#: "magic link" style URLs are the single most valuable thing in these emails.
+_MAGIC_WORDS = ("magic", "passwordless", "signin", "sign-in", "login", "log-in")
 _BAD_HOSTS = (
     "facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com",
     "linkedin.com", "tiktok.com", "pinterest.com", "whatsapp.com", "telegram.org",
@@ -60,6 +80,7 @@ class Link:
     url: str
     score: int
     label: str = ""
+    tracker: bool = False
 
     @property
     def host(self) -> str:
@@ -106,6 +127,20 @@ def _clean(url: str) -> str:
     return cleaned.rstrip(">")
 
 
+def _is_tracker(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    host = parsed.netloc.lower()
+    if _TRACKER_HOST_RE.search(host):
+        return True
+    if _TRACKER_PATH_RE.match(parsed.path or ""):
+        return True
+    params = {key.lower() for key in parse_qs(parsed.query)}
+    return bool(params & set(_TRACKER_PARAMS))
+
+
 def _score(url: str) -> int:
     score = 0
     try:
@@ -128,6 +163,13 @@ def _score(url: str) -> int:
 
     if any(word in haystack for word in _VERIFY_WORDS):
         score += 6
+    if any(word in haystack for word in _MAGIC_WORDS):
+        score += 8
+    # Magic links carry their token in the fragment.
+    if parsed.fragment:
+        score += 4
+    if _is_tracker(url):
+        score -= 40
     params = parse_qs(parsed.query)
     if any(key.lower() in _TOKEN_KEYS for key in params):
         score += 5
@@ -163,12 +205,19 @@ def extract_links(text: str, *, limit: int = 10, min_score: int = 1) -> list[Lin
         seen.add(cleaned)
         seen.add(unwrapped)
         score = _score(unwrapped)
-        if score < min_score:
+        tracker = _is_tracker(unwrapped)
+        # A tracker scores far below the floor on purpose, but it still redirects
+        # to the real destination: keep it as a last-resort candidate so a mail
+        # whose only URL is wrapped is not left with nothing clickable.
+        if score < min_score and not tracker:
             continue
-        links.append(Link(url=unwrapped, score=score))
+        links.append(Link(url=unwrapped, score=score, tracker=tracker))
 
-    links.sort(key=lambda link: -link.score)
-    return links[:limit]
+    links.sort(key=lambda link: (-link.score, link.url))
+    real = [link for link in links if not link.tracker]
+    # A click tracker is only worth showing when there is nothing better: the
+    # destination it wraps is what the user actually needs.
+    return (real or links)[:limit]
 
 
 def extract_link_urls(text: str, *, limit: int = 10) -> list[str]:
